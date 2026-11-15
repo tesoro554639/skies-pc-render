@@ -1,0 +1,16 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Rendered frames, test outputs, worker temp folders/logs, and encoded videos
+final_v1/
+test_gpu/
+_w[0-9]*/
+_w[0-9]*.log
+_w[0-9]*.srv.log
+*.mp4
+
+# OS files
+.DS_Store
+Thumbs.db

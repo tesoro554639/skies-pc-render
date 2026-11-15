@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skies Render</title>
+  <style>
+    :root {
+      --bg: #f6f5f2;
+      --surface: #ffffff;
+      --surface-muted: #efede8;
+      --border: #e1dfd7;
+      --border-strong: #c8c5bb;
+      --ink: #141413;
+      --ink-muted: #5c5a54;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --success: #15803d;
+      --success-soft: #f0fdf4;
+      --danger: #b91c1c;
+      --danger-hover: #991b1b;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --font-sans: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+      --font-mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background: #dbeafe;
+      color: var(--ink);
+    }
+
+    button, input, select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .shell {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Top utility bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .film-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 360px;
+      min-width: 0;
+    }
+
+    .film-select {
+      height: 36px;
+      padding: 0 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      min-width: 180px;
+      max-width: 300px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-ghost {
+      height: 36px;
+      padding: 0 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--ink);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--surface-muted);
+      border-color: var(--border-strong);
+    }
+    .btn-ghost:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Segmented GPU/CPU switch */
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-muted);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .segmented button {
+      height: 28px;
+      padding: 0 12px;
+      border: 0;
+      background: transparent;
+      border-radius: 4px;
+      color: var(--ink-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 140ms ease, color 140ms ease;
+    }
+    .segmented button[aria-pressed="true"] {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(20, 20, 19, 0.08);
+    }
+    .segmented button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Main split workspace */
+    .workspace {
+      display: grid;
+      grid-template-columns: 232px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* Left: Portrait frame preview */
+    .preview-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .preview-frame {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .preview-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview-empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--ink-muted);
+      font-size: 13px;
+    }
+
+    .preview-caption {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Right: Primary control plane */
+    .control-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    .film-header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .film-sub {
+      margin-top: 4px;
+      color: var(--ink-muted);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hardware-line {
+      margin-top: 6px;
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .workers-hint {
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Progress region */
+    .progress-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .progress-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .frame-count {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .frame-count span {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--ink-muted);
+      margin-left: 4px;
+    }
+
+    .state-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-muted);
+    }
+    .state-label.is-running { color: var(--accent); }
+    .state-label.is-done { color: var(--success); }
+    .state-label.is-error { color: var(--danger); }
+
+    .bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--surface-muted);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 999px;
+      transition: width 220ms ease-out;
+    }
+    .bar-fill.is-done {
+      background: var(--success);
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      font-variant-numeric: tabular-nums;
+      min-height: 18px;
+    }
+
+    /* Primary actions */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      height: 40px;
+      padding: 0 20px;
+      background: var(--ink);
+      color: #ffffff;
+      border: 1px solid var(--ink);
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 140ms ease, opacity 140ms ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #2c2c29;
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-stop {
+      height: 40px;
+      padding: 0 18px;
+      background: var(--danger);
+      color: #ffffff;
+      border: 1px solid var(--danger);
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 140ms ease;
+    }
+    .btn-stop:hover:not(:disabled) {
+      background: var(--danger-hover);
+    }
+
+    .btn-secondary {
+      height: 40px;
+      padding: 0 16px;
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--surface-muted);
+    }
+    .btn-secondary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Inline essential options */
+    .quick-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 2px 0;
+    }
+
+    .inline-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .num-input {
+      width: 62px;
+      height: 32px;
+      padding: 0 8px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .check-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .check-label input {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--ink);
+      cursor: pointer;
+    }
+
+    .error-banner {
+      padding: 10px 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      font-size: 13px;
+      display: none;
+    }
+    .error-banner.is-visible {
+      display: block;
+    }
+
+    /* Collapsible sections */
+    details.drawer {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    details.drawer summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      padding: 2px 0;
+      user-select: none;
+    }
+    details.drawer summary::-webkit-details-marker {
+      display: none;
+    }
+    details.drawer summary:hover {
+      color: var(--ink);
+    }
+    details.drawer summary::after {
+      content: "Show";
+      font-weight: 400;
+      font-size: 12px;
+    }
+    details.drawer[open] summary::after {
+      content: "Hide";
+    }
+
+    .drawer-body {
+      margin-top: 12px;
+    }
+
+    .advanced-grid {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .advanced-grid label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--ink-muted);
+    }
+
+    .advanced-grid select {
+      height: 32px;
+      padding: 0 8px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--ink);
+    }
+
+    .log-box {
+      background: #1c1c1a;
+      color: #e6e4de;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-box:empty::before {
+      content: "No activity yet.";
+      color: #9e9b93;
+    }
+
+    .log-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+
+    .link-btn {
+      background: none;
+      border: 0;
+      padding: 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .link-btn:hover { color: var(--ink); }
+
+    @media (max-width: 720px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .preview-col {
+        max-width: 190px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="film-bar">
+        <select id="filmSelect" class="film-select" aria-label="Select film"></select>
+        <button id="btnAdd" class="btn-ghost" type="button">Add folder</button>
+        <button id="btnOpenFolder" class="btn-ghost" type="button">Open folder</button>
+      </div>
+      <div class="segmented" role="group" aria-label="Render device">
+        <button id="modeGpu" type="button" aria-pressed="true">GPU</button>
+        <button id="modeCpu" type="button" aria-pressed="false">CPU</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="preview-col" aria-label="Latest rendered frame">
+        <div class="preview-frame" id="previewBox">
+          <div class="preview-empty" id="previewEmpty">No frames rendered yet.</div>
+        </div>
+        <div class="preview-caption">
+          <span id="previewLabel">Preview</span>
+          <span id="previewFrameNum"></span>
+        </div>
+      </section>
+
+      <section class="control-col">
+        <div class="film-header">
+          <h1 id="filmTitle">Loading films...</h1>
+          <div class="film-sub" id="filmSub"></div>
+          <div class="hardware-line" id="hardwareLine">Detecting CPU and GPU...</div>
+        </div>
+
+        <div id="errorBanner" class="error-banner" role="alert"></div>
+
+        <div class="progress-block">
+          <div class="progress-top">
+            <div class="frame-count" id="frameCount">0 <span>/ 0 frames</span></div>
+            <div class="state-label" id="stateLabel">Idle</div>
+          </div>
+          <div class="bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+            <div class="bar-fill" id="barFill"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="metaLeft"></span>
+            <span id="metaRight"></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btnStart" class="btn-primary" type="button">Start Render</button>
+          <button id="btnStop" class="btn-stop" type="button" hidden>Stop Safely</button>
+          <button id="btnEncode" class="btn-secondary" type="button">Encode MP4</button>
+          <button id="btnOpenMp4" class="btn-ghost" type="button" hidden>Open MP4</button>
+        </div>
+
+        <div class="quick-row">
+          <label class="inline-field">
+            <span>Workers</span>
+            <input id="workersInput" class="num-input" type="number" min="1" max="16" value="4">
+            <span class="workers-hint" id="workersHint"></span>
+          </label>
+          <label class="check-label">
+            <input id="nvencCheck" type="checkbox">
+            <span id="nvencLabel">Use GPU video encoder (NVENC)</span>
+          </label>
+        </div>
+
+        <details class="drawer" id="advancedDrawer">
+          <summary>Render settings &amp; test</summary>
+          <div class="drawer-body">
+            <div class="advanced-grid">
+              <label>Width
+                <select id="widthSelect">
+                  <option value="540" selected>540 px</option>
+                  <option value="720">720 px</option>
+                  <option value="1080">1080 px</option>
+                </select>
+              </label>
+              <label>MSAA
+                <select id="msSelect">
+                  <option value="1" selected>1x</option>
+                  <option value="2">2x</option>
+                  <option value="4">4x</option>
+                </select>
+              </label>
+              <label>Shadow map
+                <select id="smSelect">
+                  <option value="1024">1024</option>
+                  <option value="2048" selected>2048</option>
+                  <option value="4096">4096</option>
+                </select>
+              </label>
+              <button id="btnTest" class="btn-ghost" type="button">Test 5 frames (GPU)</button>
+            </div>
+          </div>
+        </details>
+
+        <details class="drawer" id="logDrawer">
+          <summary>Activity log</summary>
+          <div class="drawer-body">
+            <div class="log-box" id="logBox"></div>
+            <div class="log-actions">
+              <button id="btnClearLog" class="link-btn" type="button">Clear log</button>
+            </div>
+          </div>
+        </details>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const els = {
+      filmSelect: document.getElementById("filmSelect"),
+      btnAdd: document.getElementById("btnAdd"),
+      btnOpenFolder: document.getElementById("btnOpenFolder"),
+      modeGpu: document.getElementById("modeGpu"),
+      modeCpu: document.getElementById("modeCpu"),
+      previewBox: document.getElementById("previewBox"),
+      previewEmpty: document.getElementById("previewEmpty"),
+      previewLabel: document.getElementById("previewLabel"),
+      previewFrameNum: document.getElementById("previewFrameNum"),
+      filmTitle: document.getElementById("filmTitle"),
+      filmSub: document.getElementById("filmSub"),
+      hardwareLine: document.getElementById("hardwareLine"),
+      errorBanner: document.getElementById("errorBanner"),
+      frameCount: document.getElementById("frameCount"),
+      stateLabel: document.getElementById("stateLabel"),
+      progressBar: document.getElementById("progressBar"),
+      barFill: document.getElementById("barFill"),
+      metaLeft: document.getElementById("metaLeft"),
+      metaRight: document.getElementById("metaRight"),
+      btnStart: document.getElementById("btnStart"),
+      btnStop: document.getElementById("btnStop"),
+      btnEncode: document.getElementById("btnEncode"),
+      btnOpenMp4: document.getElementById("btnOpenMp4"),
+      workersInput: document.getElementById("workersInput"),
+      workersHint: document.getElementById("workersHint"),
+      nvencCheck: document.getElementById("nvencCheck"),
+      nvencLabel: document.getElementById("nvencLabel"),
+      widthSelect: document.getElementById("widthSelect"),
+      msSelect: document.getElementById("msSelect"),
+      smSelect: document.getElementById("smSelect"),
+      btnTest: document.getElementById("btnTest"),
+      logDrawer: document.getElementById("logDrawer"),
+      logBox: document.getElementById("logBox"),
+      btnClearLog: document.getElementById("btnClearLog"),
+    };
+
+    let state = {
+      mode: "gpu",
+      films: [],
+      selectedFilm: "",
+      logOffset: 0,
+      lastPreviewKey: "",
+      system: null,
+      workersEdited: false,
+    };
+
+    async function api(path, body) {
+      const res = await fetch(path, body !== undefined ? {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      } : undefined);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function showError(msg) {
+      if (!msg) {
+        els.errorBanner.textContent = "";
+        els.errorBanner.classList.remove("is-visible");
+        return;
+      }
+      els.errorBanner.textContent = msg;
+      els.errorBanner.classList.add("is-visible");
+    }
+
+    function updateWorkersHint() {
+      const sys = state.system;
+      if (!sys) return;
+      const rec = state.mode === "gpu" ? sys.recommendedGpuWorkers : sys.recommendedCpuWorkers;
+      els.workersInput.max = String(sys.maxWorkers);
+      els.workersHint.textContent = `Rec ${rec} · Max ${sys.maxWorkers}`;
+      if (!state.workersEdited) {
+        els.workersInput.value = String(rec);
+      }
+    }
+
+    function applySystemInfo(sys) {
+      if (!sys || state.system) return;
+      state.system = sys;
+      els.modeGpu.textContent = sys.hasGpu ? `GPU (${sys.gpuShort})` : "GPU (Unavailable)";
+      if (!sys.hasGpu) {
+        setMode("cpu");
+      }
+      const ramPart = sys.ramGb > 0 ? ` · ${sys.ramGb} GB RAM` : "";
+      const vramPart = sys.vramGb ? ` (${sys.vramGb} GB)` : "";
+      els.hardwareLine.textContent =
+        `${sys.cpuName} (${sys.physicalCores}C/${sys.logicalCores}T${ramPart}) · ${sys.primaryGpu}${vramPart}`;
+      if (!sys.hasNvenc) {
+        els.nvencCheck.checked = false;
+        els.nvencLabel.textContent = "GPU video encoder (NVENC unavailable)";
+      }
+      updateWorkersHint();
+    }
+
+    function setMode(mode) {
+      if (mode === "gpu" && state.system && !state.system.hasGpu) return;
+      state.mode = mode;
+      els.modeGpu.setAttribute("aria-pressed", String(mode === "gpu"));
+      els.modeCpu.setAttribute("aria-pressed", String(mode === "cpu"));
+      updateWorkersHint();
+    }
+
+    function renderUI(data) {
+      applySystemInfo(data.system);
+      const filmChanged = JSON.stringify(data.films.map(f => f.id)) !== JSON.stringify(state.films.map(f => f.id));
+      state.films = data.films;
+      if (filmChanged) {
+        els.filmSelect.innerHTML = "";
+        if (data.films.length === 0) {
+          const opt = document.createElement("option");
+          opt.textContent = "No films found";
+          opt.value = "";
+          els.filmSelect.appendChild(opt);
+        } else {
+          for (const f of data.films) {
+            const opt = document.createElement("option");
+            opt.value = f.id;
+            opt.textContent = f.name;
+            els.filmSelect.appendChild(opt);
+          }
+        }
+      }
+      if (data.selectedFilm && els.filmSelect.value !== data.selectedFilm) {
+        els.filmSelect.value = data.selectedFilm;
+      }
+      state.selectedFilm = data.selectedFilm;
+
+      const cur = data.current;
+      const busy = data.running !== null;
+
+      els.filmSelect.disabled = busy || data.films.length === 0;
+      els.btnAdd.disabled = busy;
+      els.modeGpu.disabled = busy || (state.system && !state.system.hasGpu);
+      els.modeCpu.disabled = busy;
+      els.workersInput.disabled = busy;
+      els.widthSelect.disabled = busy;
+      els.msSelect.disabled = busy;
+      els.smSelect.disabled = busy;
+      els.nvencCheck.disabled = busy || (state.system && !state.system.hasNvenc);
+      els.btnTest.disabled = busy || !cur || (state.system && !state.system.hasGpu);
+
+      if (!cur) {
+        els.filmTitle.textContent = "No film folder loaded";
+        els.filmSub.textContent = "Drop a film into films/ or click Add folder.";
+        els.frameCount.innerHTML = "0 <span>/ 0 frames</span>";
+        els.stateLabel.textContent = "Empty";
+        els.stateLabel.className = "state-label";
+        els.barFill.style.width = "0%";
+        els.btnStart.disabled = true;
+        els.btnEncode.disabled = true;
+        els.btnStop.hidden = true;
+        els.btnOpenMp4.hidden = true;
+        return;
+      }
+
+      els.filmTitle.textContent = cur.title;
+      els.filmSub.textContent = `${cur.totalFrames.toLocaleString()} frames · 1080×1920 @ 30 fps · ${cur.output}`;
+
+      const done = cur.done;
+      const total = cur.totalFrames;
+      const pct = total > 0 ? Math.min(100, (done / total) * 100) : 0;
+
+      els.frameCount.innerHTML = `${done.toLocaleString()} <span>/ ${total.toLocaleString()} frames</span>`;
+      els.barFill.style.width = `${pct.toFixed(1)}%`;
+      els.progressBar.setAttribute("aria-valuenow", String(Math.round(pct)));
+      els.barFill.classList.toggle("is-done", done >= total && total > 0);
+
+      els.stateLabel.className = "state-label";
+      if (data.running === "render") {
+        els.stateLabel.textContent = `Rendering on ${state.mode.toUpperCase()} (${pct.toFixed(1)}%)`;
+        els.stateLabel.classList.add("is-running");
+      } else if (data.running === "test") {
+        els.stateLabel.textContent = "Running 5-frame GPU test";
+        els.stateLabel.classList.add("is-running");
+      } else if (data.running === "encode") {
+        els.stateLabel.textContent = "Encoding MP4";
+        els.stateLabel.classList.add("is-running");
+      } else if (done >= total && total > 0) {
+        els.stateLabel.textContent = cur.mp4Exists ? "MP4 ready" : "All frames rendered";
+        els.stateLabel.classList.add("is-done");
+      } else if (done > 0) {
+        els.stateLabel.textContent = `${(total - done).toLocaleString()} remaining`;
+      } else {
+        els.stateLabel.textContent = "Ready to render";
+      }
+
+      els.metaLeft.textContent = data.metaLeft || "";
+      els.metaRight.textContent = data.metaRight || "";
+
+      // Action buttons: promote the actual next step as primary
+      els.btnStart.hidden = busy || (done >= total && total > 0);
+      els.btnStop.hidden = !busy;
+      els.btnStart.disabled = busy || done >= total;
+      els.btnStart.textContent = done > 0 && done < total ? "Resume Render" : "Start Render";
+      els.btnEncode.disabled = busy || done < total;
+      els.btnOpenMp4.hidden = !cur.mp4Exists || busy;
+
+      els.btnEncode.className = (done >= total && !cur.mp4Exists && !busy) ? "btn-primary" : "btn-secondary";
+      els.btnOpenMp4.className = (done >= total && cur.mp4Exists && !busy) ? "btn-primary" : "btn-ghost";
+
+      // Preview image
+      let imgEl = document.getElementById("previewImg");
+      if (cur.latestFrame !== null) {
+        const key = `${cur.id}:${cur.latestFrame}:${cur.latestFrameMtime}`;
+        if (!imgEl) {
+          imgEl = document.createElement("img");
+          imgEl.id = "previewImg";
+          imgEl.alt = "Latest rendered frame";
+          els.previewBox.appendChild(imgEl);
+        }
+        if (key !== state.lastPreviewKey) {
+          state.lastPreviewKey = key;
+          imgEl.src = `/api/preview?film=${encodeURIComponent(cur.id)}&t=${cur.latestFrameMtime}`;
+        }
+        imgEl.hidden = false;
+        els.previewEmpty.hidden = true;
+        els.previewLabel.textContent = "Latest frame";
+        els.previewFrameNum.textContent = `#${cur.latestFrame}`;
+      } else {
+        if (imgEl) imgEl.remove();
+        els.previewEmpty.hidden = false;
+        els.previewLabel.textContent = "Preview";
+        els.previewFrameNum.textContent = "";
+        state.lastPreviewKey = "";
+      }
+
+      if (data.lastError) {
+        showError(data.lastError);
+      }
+      if (data.logs && data.logs.length) {
+        const stickBottom = els.logBox.scrollTop + els.logBox.clientHeight >= els.logBox.scrollHeight - 24;
+        els.logBox.textContent += data.logs.join("\n") + "\n";
+        state.logOffset += data.logs.length;
+        if (stickBottom) els.logBox.scrollTop = els.logBox.scrollHeight;
+      }
+    }
+
+    async function poll() {
+      try {
+        const data = await api(`/api/state?film=${encodeURIComponent(state.selectedFilm)}&logOffset=${state.logOffset}`);
+        renderUI(data);
+      } catch (_err) {
+        // Server shutting down or temporarily busy
+      }
+    }
+
+    els.filmSelect.addEventListener("change", async () => {
+      showError("");
+      state.selectedFilm = els.filmSelect.value;
+      await poll();
+    });
+
+    els.modeGpu.addEventListener("click", () => setMode("gpu"));
+    els.modeCpu.addEventListener("click", () => setMode("cpu"));
+    els.workersInput.addEventListener("input", () => { state.workersEdited = true; });
+
+    els.btnAdd.addEventListener("click", async () => {
+      showError("");
+      try {
+        const res = await api("/api/browse", {});
+        if (res.selected) {
+          state.selectedFilm = res.selected;
+          await poll();
+        }
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnOpenFolder.addEventListener("click", async () => {
+      try {
+        await api("/api/open-folder", { film: state.selectedFilm });
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnOpenMp4.addEventListener("click", async () => {
+      try {
+        await api("/api/open-mp4", { film: state.selectedFilm });
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnStart.addEventListener("click", async () => {
+      showError("");
+      try {
+        await api("/api/render/start", {
+          film: state.selectedFilm,
+          mode: state.mode,
+          procs: Number(els.workersInput.value) || 4,
+          w: Number(els.widthSelect.value),
+          ms: Number(els.msSelect.value),
+          sm: Number(els.smSelect.value),
+        });
+        await poll();
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnTest.addEventListener("click", async () => {
+      showError("");
+      els.logDrawer.open = true;
+      try {
+        await api("/api/render/test", {
+          film: state.selectedFilm,
+          w: Number(els.widthSelect.value),
+          ms: Number(els.msSelect.value),
+          sm: Number(els.smSelect.value),
+        });
+        await poll();
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnStop.addEventListener("click", async () => {
+      try {
+        await api("/api/render/stop", {});
+        await poll();
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnEncode.addEventListener("click", async () => {
+      showError("");
+      els.logDrawer.open = true;
+      try {
+        await api("/api/encode/start", {
+          film: state.selectedFilm,
+          nvenc: els.nvencCheck.checked,
+        });
+        await poll();
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    els.btnClearLog.addEventListener("click", () => {
+      els.logBox.textContent = "";
+    });
+
+    els.logDrawer.addEventListener("toggle", () => {
+      if (els.logDrawer.open) {
+        els.logDrawer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+
+    poll();
+    setInterval(poll, 1000);
+  </script>
+</body>
+</html>
