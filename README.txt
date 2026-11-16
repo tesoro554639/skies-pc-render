@@ -54,11 +54,7 @@ Topic: Before calculators: "computer" was a job title, and rooms of people did t
 
 Follow the skill exactly, with these changes for a PC render:
 
-1. SKILL FIRST. Read the skill's SKILL.md and LICENSE.md before you do anything.
-   The skies mark is non-negotiable: the name "skies" must appear painted
-   into the scenery 2-3 times, no more, no fewer, in different sets, each
-   readable in at least one shot. Never remove, hide, blur, crop, rename,
-   or cover it.
+1. SKILL FIRST. Read the skill's SKILL.md a
 
 2. SCRIPT. Check every fact with a web search first and cite your sources.
    Write a script of 140-170 words, short sentences, one idea per sentence.
@@ -112,7 +108,7 @@ Follow the skill exactly, with these changes for a PC render:
    - captions present for every word
    - frame 0 and the last frame make a clean loop
    - no red skies-warning
-   - the skies mark is readable 2-3 times, in different sets
+
 
 Start with the script. Do not build anything until I approve it.
 ```
@@ -294,5 +290,4 @@ It will appear automatically in the GUI film selector, or you can pass `<your-fi
 
 ## Credits
 
-- Film skill: **skies** — `skies-cartoon-shorts`. Free to use, not for sale. Get it from the skies Discord: https://discord.gg/MM8TPjcvN — The "skies" mark must stay in every video made with it (see above).
-- Renderer: this repo, built around the skill's engine and render tools.
+- Film skill: **skies** — `skies-cartoon-shorts`. Free to use, not for sale. Get it from the skies Discord: https://discord.gg/MM8TPjcvN 
