@@ -1,6 +1,17 @@
 # Local & Cloud frame renderer: renders frames of the built page (engine/web) in headless browsers.
 #   python render.py --web ENGINE/web --out FRAMES_DIR (--list 0,30,60 | --range 0-1475) [--w 540] [--procs 2] [--ms 1] [--sm 2048] [--mode gpu|cpu]
-import argparse, os, subprocess, sys, time, shutil, socket
+import argparse, os, subprocess, sys, time, shutil, socket, urllib.request
+
+def wait_port_ready(port, timeout=5.0):
+    t_start = time.time()
+    while time.time() - t_start < timeout:
+        try:
+            with urllib.request.urlopen(f'http://127.0.0.1:{port}/index.html', timeout=0.2) as resp:
+                if resp.status == 200:
+                    return True
+        except Exception:
+            time.sleep(0.05)
+    return False
 
 def find_free_port(start_port=8840, exclude=None):
     port = start_port
@@ -138,7 +149,7 @@ def main():
             sp = subprocess.Popen([sys.executable, os.path.join(H, 'srv.py'), a.web, d, str(port)],
                                   stdout=srv_log_f, stderr=subprocess.STDOUT, creationflags=flags)
             procs.append(sp)
-            time.sleep(0.6)
+            wait_port_ready(port)
 
             np = subprocess.Popen(['node', runner_js, str(port), ','.join(map(str, part)), d,
                                    str(a.w), str(a.ms), str(a.sm)],

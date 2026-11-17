@@ -42,10 +42,17 @@ async function launchBrowser(args) {
   });
 
   const url = `http://127.0.0.1:${port}/index.html?w=${w || 1080}&ms=${ms}&sm=${sm}&list=${list}`;
-  try {
-    await p.goto(url, { timeout: 120000, waitUntil: 'domcontentloaded' });
-  } catch (err) {
-    console.log('PAGE_GOTO_ERR', err.message);
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      await p.goto(url, { timeout: 120000, waitUntil: 'domcontentloaded' });
+      break;
+    } catch (err) {
+      if (attempt === 5) {
+        console.log('PAGE_GOTO_ERR', err.message);
+      } else {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
   }
 
   const t0 = Date.now();

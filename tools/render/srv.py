@@ -44,6 +44,7 @@ class H(http.server.SimpleHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.send_header('Content-Length', '2')
             self.end_headers()
             self.wfile.write(b'ok')
         except Exception as exc:
