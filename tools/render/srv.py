@@ -5,11 +5,20 @@ WEB, OUT, PORT = sys.argv[1], sys.argv[2], int(sys.argv[3])
 os.makedirs(OUT, exist_ok=True)
 
 class H(http.server.SimpleHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+
     def __init__(self, *a, **k):
         super().__init__(*a, directory=WEB, **k)
 
     def log_message(self, *a):
         pass
+
+    def do_GET(self):
+        if self.path == '/favicon.ico':
+            self.send_response(204)
+            self.end_headers()
+            return
+        super().do_GET()
 
     def do_POST(self):
         try:

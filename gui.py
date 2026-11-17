@@ -1191,6 +1191,8 @@ class RenderController:
             should_encode = False
             try:
                 attempt = 1
+                prev_done = done
+                stalled_attempts = 0
                 while not self.stop_requested:
                     cmd = [
                         sys.executable, "-u", str(TOOLS_RENDER / "render.py"),
@@ -1219,6 +1221,15 @@ class RenderController:
                         elif self.stop_requested:
                             self.log(f"Stopped safely at {done_now}/{total} frames.")
                         break
+
+                    if done_now == prev_done:
+                        stalled_attempts += 1
+                        if stalled_attempts >= 3:
+                            self.log(f"Render halted: 3 consecutive passes made no progress (stuck at {done_now}/{total}). Check worker logs for errors.")
+                            break
+                    else:
+                        stalled_attempts = 0
+                    prev_done = done_now
 
                     attempt += 1
                     self.log(f"Pass {attempt} stopped at {done_now}/{total}; resuming remaining frames...")

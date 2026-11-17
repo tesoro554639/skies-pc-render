@@ -160,18 +160,24 @@ def main():
 
         t0 = time.time()
         last = -1
+        last_progress_time = time.time()
         while True:
             done = sum(len([x for x in os.listdir(d) if x.endswith('.png')]) for d in work if os.path.isdir(d))
-            if done != last and (done % 20 == 0 or done == len(todo)):
-                el = time.time() - t0
-                eta = el / max(done, 1) * (len(todo) - done)
-                print('progress %d/%d  elapsed %dm%02ds  eta %dm%02ds' %
-                      (done, len(todo), el // 60, el % 60, eta // 60, eta % 60), flush=True)
+            if done != last:
+                last_progress_time = time.time()
+                if (done % 20 == 0 or done == len(todo)):
+                    el = time.time() - t0
+                    eta = el / max(done, 1) * (len(todo) - done)
+                    print('progress %d/%d  elapsed %dm%02ds  eta %dm%02ds' %
+                          (done, len(todo), el // 60, el % 60, eta // 60, eta % 60), flush=True)
             last = done
             if all(os.path.exists(os.path.join(d, 'DONE')) for d in work) or done >= len(todo):
                 break
             if all(p.poll() is not None for p in node_procs):
                 print('WORKERS EXITED', flush=True)
+                break
+            if time.time() - last_progress_time > 120 and done < len(todo):
+                print('RENDER STALLED: No progress for 120s, stopping.', flush=True)
                 break
             if time.time() - t0 > 6 * 3600:
                 print('TIMEOUT', flush=True)
