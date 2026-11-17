@@ -1,33 +1,82 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skies Render</title>
+  <title>Skies Studio: Frame Renderer &amp; Video Finishing</title>
   <style>
-    :root {
-      --bg: #f6f5f2;
-      --surface: #ffffff;
-      --surface-muted: #efede8;
-      --border: #e1dfd7;
-      --border-strong: #c8c5bb;
-      --ink: #141413;
-      --ink-muted: #5c5a54;
-      --accent: #1d4ed8;
-      --accent-soft: #eff6ff;
+    :root[data-theme="light"] {
+      --bg: #f4efe6;
+      --surface: #fcfaf5;
+      --surface-muted: #e8e0d2;
+      --surface-hover: #efe8da;
+      --border: #d0c7b8;
+      --border-strong: #8c8376;
+      --ink: #1c1917;
+      --ink-muted: #57534e;
+      --accent: #b93818;
+      --accent-text: #b93818;
+      --accent-ink: #ffffff;
+      --accent-soft: #fae8e2;
       --success: #15803d;
-      --success-soft: #f0fdf4;
+      --success-soft: #dcfce7;
+      --warning: #9a3412;
+      --warning-soft: #ffedd5;
       --danger: #b91c1c;
-      --danger-hover: #991b1b;
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --font-sans: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
-      --font-mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+      --danger-soft: #fee2e2;
+      --shadow-float: 0 14px 34px rgba(28, 25, 23, 0.18);
+      --backdrop: rgba(28, 25, 23, 0.62);
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #161412;
+      --surface: #1f1c19;
+      --surface-muted: #2a2622;
+      --surface-hover: #332e29;
+      --border: #3a342e;
+      --border-strong: #7a7066;
+      --ink: #f5f0e6;
+      --ink-muted: #b8afa3;
+      --accent: #e05a36;
+      --accent-text: #ff9173;
+      --accent-ink: #161412;
+      --accent-soft: #3a1f18;
+      --success: #4ade80;
+      --success-soft: #132a1c;
+      --warning: #fbbf24;
+      --warning-soft: #33230c;
+      --danger: #f87171;
+      --danger-soft: #361717;
+      --shadow-float: 0 20px 44px rgba(0, 0, 0, 0.72);
+      --backdrop: rgba(12, 10, 9, 0.82);
     }
 
     * {
       box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    ::selection {
+      background: var(--accent-soft);
+      color: var(--ink);
+    }
+
+    ::-webkit-scrollbar {
+      width: 9px;
+      height: 9px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 4px;
     }
 
     html,
@@ -36,15 +85,19 @@
       padding: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: var(--font-sans);
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
-      line-height: 1.45;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
 
-    ::selection {
-      background: #dbeafe;
-      color: var(--ink);
+    .mono {
+      font-family: ui-monospace, Consolas, Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
     }
 
     button,
@@ -57,131 +110,351 @@
     button:focus-visible,
     select:focus-visible,
     input:focus-visible,
-    summary:focus-visible {
+    summary:focus-visible,
+    [tabindex]:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
 
-    .shell {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 20px 24px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* Top utility bar */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-
-    .film-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1 1 360px;
-      min-width: 0;
-    }
-
-    .film-select {
-      height: 36px;
-      padding: 0 10px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      min-width: 180px;
-      max-width: 300px;
-      font-weight: 500;
+    button {
       cursor: pointer;
     }
 
-    .btn-ghost {
-      height: 36px;
-      padding: 0 12px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--ink);
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background-color 140ms ease, border-color 140ms ease;
-    }
-
-    .btn-ghost:hover:not(:disabled) {
-      background: var(--surface-muted);
-      border-color: var(--border-strong);
-    }
-
-    .btn-ghost:disabled {
+    button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
     }
 
-    /* Segmented GPU/CPU switch */
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Header & Primary Workspace Tabs */
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+
+    .cel-mark {
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid var(--accent);
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .main-nav {
+      display: inline-flex;
+      background: var(--surface);
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      border: none;
+      background: transparent;
+      padding: 7px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .nav-tab:hover {
+      background: var(--surface-hover);
+      color: var(--ink);
+    }
+
+    .nav-tab.active {
+      background: var(--surface-muted);
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .tab-counter {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Core Action Buttons (4px mechanical geometry) */
+    .btn-primary {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 600;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: filter 120ms ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.07);
+    }
+
+    .btn-secondary {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 500;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--surface-hover);
+      border-color: var(--ink);
+    }
+
+    .btn-stop {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 4px;
+      border: 1px solid var(--danger);
+      background: var(--danger-soft);
+      color: var(--danger);
+      font-weight: 600;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .btn-stop:hover:not(:disabled) {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn-ghost {
+      height: 34px;
+      padding: 0 11px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 12.5px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 120ms ease;
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--surface-hover);
+    }
+
+    .btn-ghost[aria-pressed="true"] {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-danger-ghost {
+      color: var(--danger);
+    }
+
+    .btn-danger-ghost:hover:not(:disabled) {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .btn-sm {
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
+    .view-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Film & Device Selection Bar */
+    .film-subbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    .film-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .film-select {
+      height: 34px;
+      padding: 0 26px 0 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      font-weight: 600;
+      font-size: 13px;
+      min-width: 210px;
+      max-width: 100%;
+    }
+
     .segmented {
       display: inline-flex;
-      background: var(--surface-muted);
-      padding: 3px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      padding: 2px;
+      gap: 2px;
     }
 
     .segmented button {
-      height: 28px;
-      padding: 0 12px;
-      border: 0;
+      border: none;
       background: transparent;
-      border-radius: 4px;
-      color: var(--ink-muted);
-      font-size: 13px;
+      padding: 5px 12px;
+      border-radius: 3px;
+      font-size: 12.5px;
       font-weight: 500;
-      cursor: pointer;
-      transition: background-color 140ms ease, color 140ms ease;
+      color: var(--ink-muted);
+      transition: background 120ms ease, color 120ms ease;
     }
 
     .segmented button[aria-pressed="true"] {
-      background: var(--surface);
+      background: var(--surface-muted);
       color: var(--ink);
-      box-shadow: 0 1px 2px rgba(20, 20, 19, 0.08);
+      font-weight: 600;
     }
 
-    .segmented button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Main split workspace */
+    /* Two-Pane Drafting Workstation */
     .workspace {
       display: grid;
-      grid-template-columns: 232px 1fr;
-      gap: 28px;
+      grid-template-columns: 312px minmax(0, 1fr);
+      gap: 24px;
       align-items: start;
     }
 
-    /* Left: Portrait frame preview */
+    /* Left Pane: Light-Table Canvas & Audio/Cel Scrubber */
     .preview-col {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
+    .preview-top-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .source-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      background: var(--surface);
+      padding: 2px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      gap: 2px;
+    }
+
+    .source-tabs button {
+      border: none;
+      background: transparent;
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-muted);
+    }
+
+    .source-tabs button[aria-selected="true"] {
+      background: var(--surface-muted);
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* Dedicated 9:16 Light-Table Image Frame */
     .preview-frame {
       width: 100%;
       aspect-ratio: 9 / 16;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      background: #0d0c0b;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
     }
 
@@ -190,64 +463,385 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      cursor: zoom-in;
+    }
+
+    .compare-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .compare-layer img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .compare-divider {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--accent);
+      pointer-events: none;
+    }
+
+    .compare-tag {
+      position: absolute;
+      bottom: 8px;
+      background: #161412;
+      color: #f5f0e6;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      border: 1px solid #7a7066;
+      pointer-events: none;
+    }
+
+    /* Rule-of-Thirds & Shorts/TikTok Safe-Zone Drafting Overlay */
+    .guide-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .guide-thirds-h1,
+    .guide-thirds-h2 {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .guide-thirds-h1 { top: 33.33%; }
+    .guide-thirds-h2 { top: 66.66%; }
+
+    .guide-thirds-v1,
+    .guide-thirds-v2 {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .guide-thirds-v1 { left: 33.33%; }
+    .guide-thirds-v2 { left: 66.66%; }
+
+    .guide-safe-box {
+      position: absolute;
+      top: 10%;
+      left: 6%;
+      right: 14%;
+      bottom: 22%;
+      border: 1.5px dashed rgba(245, 158, 11, 0.85);
+    }
+
+    .guide-safe-label {
+      position: absolute;
+      top: 10.5%;
+      left: 7%;
+      background: #161412;
+      color: #fbbf24;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 2px;
+    }
+
+    .preview-frame-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: #161412;
+      color: #f5f0e6;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 3px;
+      border: 1px solid #7a7066;
+      pointer-events: none;
     }
 
     .preview-empty {
-      padding: 20px;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       text-align: center;
-      color: var(--ink-muted);
+      padding: 24px;
+      color: #b8afa3;
       font-size: 13px;
     }
 
-    .preview-caption {
+    .guide-toolbar {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .compare-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    /* Scrubber & Audio Sync Panel */
+    .scrubber-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .scrubber-slider {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .step-controls {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .step-btn {
+      height: 32px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-btn:hover:not(:disabled) {
+      background: var(--surface-hover);
+    }
+
+    .step-btn.is-playing {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      border-color: var(--accent);
+    }
+
+    .scrubber-info {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
       font-size: 12px;
       color: var(--ink-muted);
-      font-variant-numeric: tabular-nums;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
-    /* Right: Primary control plane */
+    .frame-jump-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .frame-jump-input {
+      width: 58px;
+      height: 26px;
+      padding: 0 5px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .follow-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+    }
+
+    .follow-label input {
+      accent-color: var(--accent);
+    }
+
+    .audio-sync-box {
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .audio-sync-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .audio-sync-el {
+      width: 100%;
+      height: 32px;
+    }
+
+    .frame-tools-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Right Pane: Production Control Desk */
     .control-col {
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      min-width: 0;
+      gap: 16px;
+    }
+
+    .film-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .film-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .film-header h1 {
       margin: 0;
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
       line-height: 1.25;
     }
 
     .film-sub {
-      margin-top: 4px;
       color: var(--ink-muted);
       font-size: 13px;
-      font-variant-numeric: tabular-nums;
     }
 
     .hardware-line {
-      margin-top: 6px;
       color: var(--ink-muted);
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
+      font-size: 12.5px;
     }
 
-    .workers-hint {
-      color: var(--ink-muted);
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
+    .health-strip {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
     }
 
-    /* Progress region */
+    .health-badge {
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .health-badge:hover {
+      background: var(--surface-hover);
+    }
+
+    .health-badge.status-ok {
+      border-color: var(--success);
+      color: var(--success);
+      background: var(--success-soft);
+    }
+
+    .health-badge.status-warning {
+      border-color: var(--warning);
+      color: var(--warning);
+      background: var(--warning-soft);
+    }
+
+    .health-badge.status-error {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .missing-banner {
+      background: var(--warning-soft);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .error-banner {
+      background: var(--danger-soft);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .error-banner.is-visible {
+      display: block;
+    }
+
+    /* Progress & Visual Render Timeline Map */
     .progress-block {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      border-radius: 6px;
       padding: 16px 18px;
       display: flex;
       flex-direction: column;
@@ -263,42 +857,40 @@
     }
 
     .frame-count {
-      font-size: 26px;
-      font-weight: 600;
+      font-size: 23px;
+      font-weight: 700;
       letter-spacing: -0.02em;
-      font-variant-numeric: tabular-nums;
     }
 
     .frame-count span {
-      font-size: 14px;
-      font-weight: 400;
       color: var(--ink-muted);
-      margin-left: 4px;
+      font-weight: 400;
+      font-size: 14px;
     }
 
     .state-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 4px;
+      background: var(--surface-muted);
+      color: var(--ink);
     }
 
     .state-label.is-running {
-      color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-text);
     }
 
     .state-label.is-done {
+      background: var(--success-soft);
       color: var(--success);
     }
 
-    .state-label.is-error {
-      color: var(--danger);
-    }
-
     .bar-track {
-      width: 100%;
       height: 8px;
       background: var(--surface-muted);
-      border-radius: 999px;
+      border-radius: 2px;
       overflow: hidden;
     }
 
@@ -306,186 +898,154 @@
       height: 100%;
       width: 0%;
       background: var(--accent);
-      border-radius: 999px;
-      transition: width 220ms ease-out;
+      transition: width 200ms ease;
     }
 
     .bar-fill.is-done {
       background: var(--success);
     }
 
+    .bar-fill.is-encode {
+      background: var(--warning);
+    }
+
+    .timeline-map-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .timeline-map-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .timeline-map-canvas {
+      width: 100%;
+      height: 14px;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      display: block;
+      cursor: crosshair;
+    }
+
     .progress-meta {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--ink-muted);
-      font-variant-numeric: tabular-nums;
-      min-height: 18px;
-    }
-
-    /* Primary actions */
-    .actions {
-      display: flex;
-      align-items: center;
       gap: 10px;
       flex-wrap: wrap;
     }
 
-    .btn-primary {
-      height: 40px;
-      padding: 0 20px;
-      background: var(--ink);
-      color: #ffffff;
-      border: 1px solid var(--ink);
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 140ms ease, opacity 140ms ease;
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .btn-primary:hover:not(:disabled) {
-      background: #2c2c29;
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .btn-stop {
-      height: 40px;
-      padding: 0 18px;
-      background: var(--danger);
-      color: #ffffff;
-      border: 1px solid var(--danger);
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 140ms ease;
-    }
-
-    .btn-stop:hover:not(:disabled) {
-      background: var(--danger-hover);
-    }
-
-    .btn-secondary {
-      height: 40px;
-      padding: 0 16px;
-      background: var(--surface);
-      color: var(--ink);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 140ms ease, border-color 140ms ease;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: var(--surface-muted);
-    }
-
-    .btn-secondary:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    /* Inline essential options */
     .quick-row {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 18px;
       flex-wrap: wrap;
-      padding: 2px 0;
+      font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
     }
 
     .inline-field {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
+      color: var(--ink-muted);
+    }
+
+    .num-input,
+    .select-input {
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
       color: var(--ink);
+      font-size: 12.5px;
     }
 
     .num-input {
-      width: 62px;
-      height: 32px;
-      padding: 0 8px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      font-variant-numeric: tabular-nums;
+      width: 64px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-weight: 600;
     }
 
     .check-label {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 7px;
-      font-size: 13px;
+      color: var(--ink);
       cursor: pointer;
-      user-select: none;
     }
 
     .check-label input {
-      width: 15px;
-      height: 15px;
-      accent-color: var(--ink);
-      cursor: pointer;
+      accent-color: var(--accent);
     }
 
-    .error-banner {
-      padding: 10px 14px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: var(--radius-sm);
-      color: var(--danger);
-      font-size: 13px;
-      display: none;
+    /* Collapsible Drawers */
+    .drawer {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
     }
 
-    .error-banner.is-visible {
-      display: block;
-    }
-
-    /* Collapsible sections */
-    details.drawer {
-      border-top: 1px solid var(--border);
-      padding-top: 12px;
-    }
-
-    details.drawer summary {
-      cursor: pointer;
+    .drawer summary {
       list-style: none;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-muted);
-      padding: 2px 0;
       user-select: none;
     }
 
-    details.drawer summary::-webkit-details-marker {
-      display: none;
+    .drawer summary:hover {
+      background: var(--surface-hover);
     }
 
-    details.drawer summary:hover {
-      color: var(--ink);
+    .drawer summary::after {
+      content: "+";
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 15px;
+      color: var(--ink-muted);
     }
 
-    details.drawer summary::after {
-      content: "Show";
-      font-weight: 400;
-      font-size: 12px;
-    }
-
-    details.drawer[open] summary::after {
-      content: "Hide";
+    .drawer[open] summary::after {
+      content: "-";
     }
 
     .drawer-body {
-      margin-top: 12px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .preset-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .advanced-grid {
@@ -496,231 +1056,1776 @@
     }
 
     .advanced-grid label {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--ink-muted);
     }
 
-    .advanced-grid select {
-      height: 32px;
-      padding: 0 8px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      color: var(--ink);
-    }
-
     .log-box {
-      background: #1c1c1a;
-      color: #e6e4de;
-      font-family: var(--font-mono);
+      height: 220px;
+      overflow-y: auto;
+      font-family: ui-monospace, Consolas, monospace;
       font-size: 12px;
       line-height: 1.5;
-      padding: 12px 14px;
-      border-radius: var(--radius-sm);
-      height: 150px;
-      overflow-y: auto;
+      color: var(--ink-muted);
       white-space: pre-wrap;
       word-break: break-word;
-    }
-
-    .log-box:empty::before {
-      content: "No activity yet.";
-      color: #9e9b93;
+      background: var(--bg);
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
     }
 
     .log-actions {
       display: flex;
-      justify-content: flex-end;
-      margin-top: 6px;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .link-btn {
       background: none;
-      border: 0;
-      padding: 0;
+      border: none;
+      padding: 4px 0;
+      font-size: 12.5px;
       color: var(--ink-muted);
-      font-size: 12px;
       text-decoration: underline;
-      cursor: pointer;
     }
 
     .link-btn:hover {
       color: var(--ink);
     }
 
-    @media (max-width: 720px) {
+    /* VIEW 2: STORYBOARD CONTACT SHEET */
+    .storyboard-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    .storyboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .contact-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+      padding: 0;
+      transition: border-color 120ms ease;
+    }
+
+    .contact-tile:hover {
+      border-color: var(--accent);
+    }
+
+    .contact-tile-thumb {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      background: #0d0c0b;
+      overflow: hidden;
+    }
+
+    .contact-tile-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .contact-tile-meta {
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      color: var(--ink-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* VIEW 3: VIDEO LIBRARY & HISTORY (Integrated Archive Ledger, no bento stat grid) */
+    .library-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+    }
+
+    .archive-ledger {
+      font-size: 13px;
+      color: var(--ink-muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .archive-ledger strong {
+      color: var(--ink);
+    }
+
+    .toolbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .search-input {
+      width: 240px;
+      max-width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 16px;
+    }
+
+    .video-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 120ms ease;
+    }
+
+    .video-card:hover {
+      border-color: var(--border-strong);
+    }
+
+    .video-card-thumb {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      background: #0d0c0b;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .video-card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .video-duration-pill {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: #161412;
+      color: #f5f0e6;
+      border: 1px solid #7a7066;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .video-card-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .video-card-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .video-card-filename {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11.5px;
+      color: var(--ink-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .video-meta-line {
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+
+    .video-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .video-card-actions button {
+      white-space: nowrap;
+    }
+
+    .video-card-actions .btn-play-card {
+      flex: 1 1 auto;
+    }
+
+    .history-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .history-table th {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      background: var(--surface-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .history-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .history-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .encoder-pill {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11.5px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--surface-muted);
+      color: var(--ink);
+    }
+
+    .status-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .status-pill.success {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .status-pill.failed {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .empty-state-box {
+      padding: 40px 24px;
+      text-align: center;
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      border-radius: 6px;
+      color: var(--ink-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Floating Dialogs & Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--backdrop);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 18px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 94vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow-float);
+    }
+
+    .modal-card.compact {
+      max-width: 440px;
+    }
+
+    .modal-card.lightbox {
+      width: auto;
+      max-width: 92vw;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      color: var(--ink);
+      width: 34px;
+      height: 34px;
+      border-radius: 4px;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background: var(--surface-hover);
+    }
+
+    /* Drag & Drop Overlay */
+    .drag-drop-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--backdrop);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+
+    .drag-drop-box {
+      border: 2px dashed var(--accent);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 40px 32px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-float);
+    }
+
+    .drag-drop-icon {
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drag-drop-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .drag-drop-desc {
+      font-size: 13px;
+      color: var(--ink-muted);
+      line-height: 1.45;
+    }
+
+    /* Import Dialog Styles */
+    .import-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .import-file-badge {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--ink);
+      word-break: break-all;
+    }
+
+    .import-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+
+    .import-suboptions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-left: 24px;
+      flex-wrap: wrap;
+    }
+
+    .import-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .import-progress-bar-bg {
+      height: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .import-progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.15s ease-out;
+    }
+
+    .import-progress-text {
+      font-size: 11.5px;
+      color: var(--ink-muted);
+    }
+
+    .import-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .modal-img-wrap {
+      overflow: auto;
+      max-height: 76vh;
+      border-radius: 4px;
+      background: #0d0c0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-img {
+      max-height: 76vh;
+      max-width: 100%;
+      display: block;
+    }
+
+    .modal-img.zoomed-100 {
+      max-height: none;
+      max-width: none;
+      cursor: zoom-out;
+    }
+
+    .modal-video-wrap {
+      width: 100%;
+      background: #0d0c0b;
+      border-radius: 4px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .modal-video {
+      max-height: 68vh;
+      width: 100%;
+      max-width: 420px;
+      display: block;
+    }
+
+    .theater-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .theater-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .diag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .diag-row {
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .diag-row strong {
+      font-size: 13px;
+    }
+
+    .diag-row span {
+      font-size: 12.5px;
+      color: var(--ink-muted);
+    }
+
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 18px;
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+
+    kbd {
+      background: var(--surface-muted);
+      border: 1px solid var(--border-strong);
+      border-radius: 3px;
+      padding: 2px 7px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Toast Notifications (no left decorative stripe) */
+    .toast-stack {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      color: var(--ink);
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow-float);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .toast-tag {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .toast-tag.ok {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .toast-tag.err {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    /* Tablet / Medium Laptop Reflow (640px .. 920px) */
+    @media (max-width: 920px) {
+      .workspace {
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .storyboard-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      }
+    }
+
+    /* Mobile Reflow (< 760px): stack panes, enforce >=44px tap targets & comfortable spacing */
+    @media (max-width: 760px) {
+      .shell {
+        padding: 12px 14px 40px;
+        gap: 14px;
+      }
+
       .workspace {
         grid-template-columns: 1fr;
+        gap: 16px;
       }
 
       .preview-col {
-        max-width: 190px;
+        max-width: 360px;
+        width: 100%;
+        margin: 0 auto;
       }
+
+      .nav-tab,
+      .btn-primary,
+      .btn-secondary,
+      .btn-stop,
+      .btn-ghost,
+      .step-btn,
+      .modal-close,
+      .segmented button,
+      .source-tabs button,
+      .health-badge,
+      .bookmark-chip,
+      .select-input,
+      .num-input,
+      .frame-jump-input,
+      .follow-label,
+      .check-label,
+      .scrubber-slider {
+        min-height: 44px;
+      }
+
+      .follow-label input,
+      .check-label input {
+        width: 20px;
+        height: 20px;
+      }
+
+      .actions,
+      .step-controls,
+      .frame-tools-row,
+      .video-card-actions,
+      .header-actions {
+        gap: 8px;
+      }
+
+      .step-controls {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .film-select,
+      .search-input {
+        width: 100%;
+        min-height: 44px;
+      }
+
+      .shortcut-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar-controls {
+        justify-content: flex-start;
+      }
+    }
+
+    /* Production Pro Controls CSS */
+    .caption-overlay-img {
+      position: absolute;
+      top: 60.6%;
+      left: 0;
+      width: 100%;
+      height: auto;
+      pointer-events: none;
+    }
+
+    .onion-overlay-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .waveform-canvas {
+      width: 100%;
+      height: 36px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: block;
+      cursor: pointer;
+    }
+
+    .bookmarks-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .bookmarks-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .bookmark-chip {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 3px;
+      border: 1px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .storage-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+    }
+
+    .storage-cell {
+      padding: 8px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .storage-cell strong {
+      display: block;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .theater-hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 12px;
+      color: var(--ink-muted);
+      padding: 4px 2px;
     }
   </style>
 </head>
 
 <body>
   <div class="shell">
-    <header class="topbar">
-      <div class="film-bar">
-        <select id="filmSelect" class="film-select" aria-label="Select film"></select>
-        <button id="btnAdd" class="btn-ghost" type="button">Add folder</button>
-        <button id="btnOpenFolder" class="btn-ghost" type="button">Open folder</button>
+    <!-- Top Application Bar -->
+    <header class="header-bar">
+      <div class="brand-group">
+        <div class="brand-title">
+          <span class="cel-mark" aria-hidden="true">30f</span>
+          <span>Skies Studio</span>
+        </div>
+        <nav class="main-nav" role="tablist" aria-label="Workspace sections">
+          <button id="navStudio" class="nav-tab active" type="button" role="tab" aria-selected="true">Render Studio</button>
+          <button id="navStoryboard" class="nav-tab" type="button" role="tab" aria-selected="false">Storyboard Sheet</button>
+          <button id="navLibrary" class="nav-tab" type="button" role="tab" aria-selected="false">
+            <span>Video Library &amp; History</span>
+            <span id="libraryBadge" class="tab-counter">0</span>
+          </button>
+        </nav>
       </div>
-      <div class="segmented" role="group" aria-label="Render device">
-        <button id="modeGpu" type="button" aria-pressed="true">GPU</button>
-        <button id="modeCpu" type="button" aria-pressed="false">CPU</button>
+
+      <div class="header-actions">
+        <button id="chimeToggle" class="btn-ghost" type="button" aria-pressed="true" title="Play a chime when render or encode completes">Chime: On</button>
+        <button id="shortcutsBtn" class="btn-ghost" type="button" title="Keyboard shortcuts">Shortcuts (?)</button>
+        <button id="themeToggle" class="btn-ghost" type="button" title="Switch darkroom or parchment theme">Theme: Darkroom</button>
       </div>
     </header>
 
-    <main class="workspace">
-      <section class="preview-col" aria-label="Latest rendered frame">
-        <div class="preview-frame" id="previewBox">
-          <div class="preview-empty" id="previewEmpty">No frames rendered yet.</div>
+    <!-- SECTION 1: RENDER STUDIO -->
+    <div id="viewStudio" class="view-panel">
+      <div class="film-subbar">
+        <div class="film-picker">
+          <select id="filmSelect" class="film-select" aria-label="Select active film"></select>
+          <button id="btnImportZip" class="btn-ghost" type="button" title="Import Skies film pack (.zip) and unpack or render">
+            <span aria-hidden="true" style="margin-right: 4px;">📦</span>Import Zip
+          </button>
+          <button id="btnAdd" class="btn-ghost" type="button" title="Add an external film directory">Add Folder</button>
+          <button id="btnOpenFolder" class="btn-ghost" type="button" title="Open film folder in Explorer">Open Folder</button>
+          <input type="file" id="zipFileInput" accept=".zip" style="display: none;" aria-label="Select Skies Film Zip Archive">
         </div>
-        <div class="preview-caption">
-          <span id="previewLabel">Preview</span>
-          <span id="previewFrameNum"></span>
+        <div class="segmented" role="group" aria-label="Render hardware mode">
+          <button id="modeGpu" type="button" aria-pressed="true">GPU</button>
+          <button id="modeCpu" type="button" aria-pressed="false">CPU</button>
+        </div>
+      </div>
+
+      <main class="workspace">
+        <!-- Left Light-Table Pane -->
+        <section class="preview-col" aria-label="Frame light-table inspector">
+          <div class="preview-top-controls">
+            <div class="source-tabs" role="tablist">
+              <button id="tabFinal" type="button" role="tab" aria-selected="true">Final (0)</button>
+              <button id="tabTest" type="button" role="tab" aria-selected="false">Test (0)</button>
+            </div>
+          </div>
+
+          <div class="guide-toolbar">
+            <select id="guideSelect" class="select-input" aria-label="Frame guides" style="flex: 1; min-width: 130px;">
+              <option value="none">Guides: Off</option>
+              <option value="thirds">Guides: Thirds</option>
+              <option value="safe">Guides: Shorts Safe</option>
+            </select>
+            <button id="btnCaptionToggle" class="btn-ghost btn-sm" type="button" aria-pressed="false" hidden title="Preview live captions from caps/list.txt">Captions</button>
+            <button id="btnOnionToggle" class="btn-ghost btn-sm" type="button" aria-pressed="false" title="Ghost previous cel frame (f-1) at 35% opacity">Onion</button>
+            <button id="btnCompareToggle" class="btn-ghost btn-sm" type="button" aria-pressed="false" hidden title="Compare Final frame against matching Test GPU frame">Compare</button>
+          </div>
+
+          <div class="preview-frame" id="previewBox">
+            <div class="preview-empty" id="previewEmpty">
+              <span id="previewEmptyText">No rendered frames yet. Click Start Render to generate frames.</span>
+            </div>
+            <img id="onionImg" class="onion-overlay-img" alt="Previous frame onion skin" hidden>
+            <img id="previewImg" alt="Rendered frame preview" style="display: none;">
+            <img id="captionOverlayImg" class="caption-overlay-img" alt="Caption preview" hidden>
+
+            <div id="compareLayer" class="compare-layer" hidden>
+              <img id="compareTestImg" alt="GPU Test frame comparison">
+            </div>
+            <div id="compareDivider" class="compare-divider" hidden></div>
+            <span id="compareTagLeft" class="compare-tag" style="left: 8px;" hidden>Final</span>
+            <span id="compareTagRight" class="compare-tag" style="right: 8px;" hidden>Test GPU</span>
+
+            <div id="guideOverlay" class="guide-overlay" hidden>
+              <div id="guideThirds" hidden>
+                <div class="guide-thirds-h1"></div>
+                <div class="guide-thirds-h2"></div>
+                <div class="guide-thirds-v1"></div>
+                <div class="guide-thirds-v2"></div>
+              </div>
+              <div id="guideSafe" hidden>
+                <div class="guide-safe-box"></div>
+                <div class="guide-safe-label">SAFE TITLE &amp; CAPTION ZONE</div>
+              </div>
+            </div>
+
+            <span id="previewOverlayBadge" class="preview-frame-badge" hidden>f_00000</span>
+          </div>
+
+          <div id="compareSliderRow" class="compare-slider-row" hidden>
+            <span>Final / Test Wipe</span>
+            <input id="compareSlider" type="range" min="0" max="100" value="50" style="flex: 1; accent-color: var(--accent);">
+          </div>
+
+          <div class="scrubber-wrap" id="scrubberWrap">
+            <input id="scrubberSlider" class="scrubber-slider" type="range" min="0" max="0" value="0" aria-label="Scrub rendered frames">
+
+            <div class="step-controls">
+              <button id="btnFirst" class="step-btn" type="button" title="First frame (Home)">|&lt;</button>
+              <button id="btnBack10" class="step-btn" type="button" title="Back 10 frames (Down Arrow)">-10</button>
+              <button id="btnPrev" class="step-btn" type="button" title="Previous frame (Left Arrow)">-1</button>
+              <button id="btnFlipbook" class="step-btn" type="button" title="Play flipbook at 24 fps (Space)">Play</button>
+              <button id="btnNext" class="step-btn" type="button" title="Next frame (Right Arrow)">+1</button>
+              <button id="btnFwd10" class="step-btn" type="button" title="Forward 10 frames (Up Arrow)">+10</button>
+              <button id="btnLast" class="step-btn" type="button" title="Last frame (End)">&gt;|</button>
+            </div>
+
+            <div class="scrubber-info">
+              <div class="frame-jump-group">
+                <label for="frameJumpInput" class="mono">f_</label>
+                <input id="frameJumpInput" class="frame-jump-input" type="number" min="0" value="0" title="Enter frame index and press Enter">
+                <span id="scrubberTimecode" class="mono">00:00.00</span>
+              </div>
+              <label class="follow-label">
+                <input id="followCheck" type="checkbox" checked>
+                <span>Follow latest</span>
+              </label>
+            </div>
+
+            <div id="audioSyncBox" class="audio-sync-box" hidden>
+              <div class="audio-sync-header">
+                <span>Voiceover &amp; Mix Waveform</span>
+                <label class="follow-label">
+                  <input id="audioSyncCheck" type="checkbox" checked>
+                  <span>Sync frames</span>
+                </label>
+              </div>
+              <canvas id="waveformCanvas" class="waveform-canvas" width="280" height="36" title="Click waveform to jump to audio timestamp and frame"></canvas>
+              <audio id="audioSyncPlayer" class="audio-sync-el" controls preload="metadata"></audio>
+            </div>
+
+            <div class="frame-tools-row">
+              <button id="btnCopyFrame" class="btn-ghost btn-sm" type="button">Copy PNG</button>
+              <button id="btnSaveFrame" class="btn-ghost btn-sm" type="button">Save PNG</button>
+            </div>
+
+            <div class="bookmarks-panel">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+                <button id="btnMarkFrame" class="btn-ghost btn-sm" type="button" title="Bookmark or unmark active frame (M)">Mark Cel (M)</button>
+                <button id="btnRenderMarked" class="btn-ghost btn-sm" type="button" hidden title="Re-render only bookmarked frames">Re-render Marks</button>
+                <button id="btnClearMarks" class="link-btn" type="button" hidden>Clear marks</button>
+              </div>
+              <div id="bookmarksChips" class="bookmarks-chips"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Control Desk -->
+        <section class="control-col">
+          <div class="film-header">
+            <div class="film-title-row">
+              <div>
+                <h1 id="filmTitle">Loading project...</h1>
+                <div class="film-sub tabular" id="filmSub">Reading film metadata...</div>
+              </div>
+              <button id="btnDiagnostics" class="btn-ghost btn-sm" type="button">Asset Check</button>
+            </div>
+            <div class="hardware-line" id="hardwareLine">Detecting CPU and GPU configuration...</div>
+            <div class="health-strip" id="healthStrip"></div>
+          </div>
+
+          <div id="missingBanner" class="missing-banner" hidden>
+            <span id="missingBannerText">Missing frames detected.</span>
+            <button id="btnMissingBannerAction" class="btn-ghost btn-sm" type="button">Render Missing Frames</button>
+          </div>
+
+          <div id="errorBanner" class="error-banner" role="alert"></div>
+
+          <div class="progress-block">
+            <div class="progress-top">
+              <div class="frame-count tabular" id="frameCount">0 <span>/ 0 frames</span></div>
+              <div class="state-label tabular" id="stateLabel">Idle</div>
+            </div>
+            <div class="bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+              <div class="bar-fill" id="barFill"></div>
+            </div>
+
+            <div class="timeline-map-wrap">
+              <div class="timeline-map-label">
+                <span>Frame Coverage Map (click timeline to jump)</span>
+                <span id="timelineHoverLabel" class="mono"></span>
+              </div>
+              <canvas id="renderMapCanvas" class="timeline-map-canvas" width="600" height="14"></canvas>
+            </div>
+
+            <div class="progress-meta tabular">
+              <span id="metaLeft"></span>
+              <span id="metaRight"></span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="btnStart" class="btn-primary" type="button">Start Render</button>
+            <button id="btnStop" class="btn-stop" type="button" hidden>Stop Safely</button>
+            <button id="btnRenderMissing" class="btn-secondary" type="button" hidden>Render Missing</button>
+            <button id="btnEncode" class="btn-secondary" type="button">Encode MP4</button>
+            <button id="btnWatchLibrary" class="btn-secondary" type="button" hidden>Watch Film MP4</button>
+          </div>
+
+          <div class="quick-row">
+            <label class="inline-field">
+              <span>Workers</span>
+              <input id="workersInput" class="num-input" type="number" min="1" max="16" value="4">
+              <span id="workersHint" class="tabular" style="font-size: 12px; color: var(--ink-muted);"></span>
+            </label>
+            <label class="inline-field">
+              <span>MP4 Quality</span>
+              <select id="crfSelect" class="select-input">
+                <option value="15">CRF 15 (Master)</option>
+                <option value="17" selected>CRF 17 (Studio Default)</option>
+                <option value="21">CRF 21 (Compact Web)</option>
+                <option value="24">CRF 24 (Draft)</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input id="nvencCheck" type="checkbox">
+              <span id="nvencLabel">Use NVENC GPU encoder</span>
+            </label>
+            <label class="check-label" title="Automatically encode MP4 immediately after render completes">
+              <input id="autoEncodeCheck" type="checkbox">
+              <span>Auto-encode MP4 when done</span>
+            </label>
+          </div>
+
+          <details class="drawer" id="advancedDrawer">
+            <summary>Render presets, resolution, range &amp; output name</summary>
+            <div class="drawer-body">
+              <div class="preset-row">
+                <span style="font-size: 12.5px; color: var(--ink-muted);">Quick Presets:</span>
+                <button id="presetFast" class="btn-ghost btn-sm" type="button">Draft Check (540p, 1x MSAA)</button>
+                <button id="presetStudio" class="btn-ghost btn-sm" type="button">Balanced Studio (540p, 2x MSAA)</button>
+                <button id="presetMaster" class="btn-ghost btn-sm" type="button">1080p Master (1080px, 4x MSAA)</button>
+              </div>
+              <div class="advanced-grid">
+                <label>Width
+                  <select id="widthSelect" class="select-input">
+                    <option value="540" selected>540 px</option>
+                    <option value="720">720 px</option>
+                    <option value="1080">1080 px</option>
+                  </select>
+                </label>
+                <label>MSAA
+                  <select id="msSelect" class="select-input">
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                    <option value="4">4x</option>
+                  </select>
+                </label>
+                <label>Shadow Map
+                  <select id="smSelect" class="select-input">
+                    <option value="1024">1024</option>
+                    <option value="2048" selected>2048</option>
+                    <option value="4096">4096</option>
+                  </select>
+                </label>
+                <label>Range / List
+                  <input id="rangeInput" class="num-input" type="text" placeholder="0-300 or 12,45" style="width: 132px; font-weight: 400;">
+                </label>
+                <label>Custom MP4 Name
+                  <input id="outputNameInput" class="num-input" type="text" placeholder="Optional .mp4" style="width: 145px; font-weight: 400;">
+                </label>
+                <button id="btnTest" class="btn-ghost btn-sm" type="button">Test 5 GPU Frames</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="drawer" id="storageDrawer">
+            <summary>Disk storage, frame anomalies &amp; cache cleanup</summary>
+            <div class="drawer-body">
+              <div class="storage-grid" id="storageGrid">
+                <div class="storage-cell"><span>Final Frames</span><strong id="metFramesMb">-</strong></div>
+                <div class="storage-cell"><span>Median Cel Size</span><strong id="metMedianKb">-</strong></div>
+                <div class="storage-cell"><span>Test GPU Cache</span><strong id="metTestMb">-</strong></div>
+                <div class="storage-cell"><span>Worker Temp Dirs</span><strong id="metWorkerDirs">-</strong></div>
+              </div>
+              <div id="anomalyStrip" style="font-size: 12.5px; color: var(--ink-muted);">Click Refresh Storage to scan frame integrity.</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="btnRefreshMetrics" class="btn-ghost btn-sm" type="button">Refresh Storage Scan</button>
+                <button id="btnCleanTest" class="btn-ghost btn-sm" type="button">Clean Test GPU Cache</button>
+                <button id="btnCleanWorkers" class="btn-ghost btn-sm" type="button">Clean Worker Temp Dirs</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="drawer" id="logDrawer">
+            <summary>Render &amp; Encode Console Log</summary>
+            <div class="drawer-body">
+              <input id="logFilterInput" class="search-input" type="search" placeholder="Filter console lines..." style="width: 100%; height: 30px;">
+              <div class="log-box" id="logBox"></div>
+              <div class="log-actions">
+                <button id="btnCopyLog" class="link-btn" type="button">Copy console text</button>
+                <button id="btnClearLog" class="link-btn" type="button">Clear output</button>
+              </div>
+            </div>
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <!-- SECTION 2: STORYBOARD CONTACT SHEET -->
+    <div id="viewStoryboard" class="view-panel" hidden>
+      <div class="storyboard-toolbar">
+        <div>
+          <strong id="sbFilmTitle">Contact Sheet</strong>
+          <span id="sbSummary" class="mono" style="margin-left: 10px; font-size: 12px; color: var(--ink-muted);"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <label style="font-size: 12.5px; color: var(--ink-muted); display: flex; align-items: center; gap: 6px;">
+            <span>Interval</span>
+            <select id="sbIntervalSelect" class="select-input">
+              <option value="15">Every 15 frames (0.5s)</option>
+              <option value="30" selected>Every 30 frames (1.0s)</option>
+              <option value="60">Every 60 frames (2.0s)</option>
+              <option value="1">All frames (first 120)</option>
+            </select>
+          </label>
+          <button id="btnSbRefresh" class="btn-ghost btn-sm" type="button">Refresh Sheet</button>
+          <button id="btnExportContactSheet" class="btn-primary btn-sm" type="button">Export Sheet PNG</button>
+        </div>
+      </div>
+
+      <div id="storyboardGrid" class="storyboard-grid"></div>
+      <div id="storyboardEmpty" class="empty-state-box" hidden>
+        <strong>No rendered frames available for contact sheet</strong>
+        <span>Render frames in Render Studio first, then return here to review visual pacing across the film.</span>
+        <button id="btnSbGoStudio" class="btn-secondary btn-sm" type="button">Return to Render Studio</button>
+      </div>
+    </div>
+
+    <!-- SECTION 3: DEDICATED VIDEO LIBRARY & ENCODE HISTORY -->
+    <div id="viewLibrary" class="view-panel" hidden>
+      <div class="library-toolbar">
+        <div class="archive-ledger tabular">
+          <span>Archive: <strong id="libLedgerCount">0 MP4s</strong></span>
+          <span>Runtime: <strong id="libLedgerDur">0.0s</strong></span>
+          <span>Disk: <strong id="libLedgerDisk">0.0 MB</strong></span>
+          <span>Encodes: <strong id="libLedgerRuns">0 completed</strong></span>
+        </div>
+        <div class="toolbar-controls">
+          <input id="librarySearch" class="search-input" type="search" placeholder="Filter by title or filename...">
+          <select id="librarySort" class="select-input" aria-label="Sort generated MP4 files">
+            <option value="newest">Sort: Newest First</option>
+            <option value="oldest">Sort: Oldest First</option>
+            <option value="largest">Sort: Largest File</option>
+            <option value="longest">Sort: Longest Duration</option>
+            <option value="alpha">Sort: Title A-Z</option>
+          </select>
+          <button id="btnRefreshLibrary" class="btn-ghost btn-sm" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <section style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="section-header">
+          <h2 class="section-title">Generated MP4 Videos</h2>
+        </div>
+        <div id="videoGrid" class="video-grid"></div>
+        <div id="videoGridEmpty" class="empty-state-box" hidden>
+          <strong>No generated MP4 videos found</strong>
+          <span>Finish rendering frames for a film and run Encode MP4 in Render Studio to populate your library.</span>
+          <button id="btnLibGoStudio" class="btn-secondary btn-sm" type="button">Open Render Studio</button>
         </div>
       </section>
 
-      <section class="control-col">
-        <div class="film-header">
-          <h1 id="filmTitle">Loading films...</h1>
-          <div class="film-sub" id="filmSub"></div>
-          <div class="hardware-line" id="hardwareLine">Detecting CPU and GPU...</div>
-        </div>
-
-        <div id="errorBanner" class="error-banner" role="alert"></div>
-
-        <div class="progress-block">
-          <div class="progress-top">
-            <div class="frame-count" id="frameCount">0 <span>/ 0 frames</span></div>
-            <div class="state-label" id="stateLabel">Idle</div>
-          </div>
-          <div class="bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-            id="progressBar">
-            <div class="bar-fill" id="barFill"></div>
-          </div>
-          <div class="progress-meta">
-            <span id="metaLeft"></span>
-            <span id="metaRight"></span>
+      <section style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="section-header">
+          <h2 class="section-title">Encode History Ledger</h2>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <select id="historyFilter" class="select-input" aria-label="Filter encode history">
+              <option value="all">Status: All</option>
+              <option value="Completed">Completed Only</option>
+              <option value="Failed">Failed Only</option>
+            </select>
+            <button id="btnExportCsv" class="btn-ghost btn-sm" type="button">Export CSV</button>
+            <button id="btnClearHistory" class="btn-ghost btn-sm btn-danger-ghost" type="button">Clear History</button>
           </div>
         </div>
 
-        <div class="actions">
-          <button id="btnStart" class="btn-primary" type="button">Start Render</button>
-          <button id="btnStop" class="btn-stop" type="button" hidden>Stop Safely</button>
-          <button id="btnEncode" class="btn-secondary" type="button">Encode MP4</button>
-          <button id="btnOpenMp4" class="btn-ghost" type="button" hidden>Open MP4</button>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date &amp; Time</th>
+                <th>Film</th>
+                <th>Output File</th>
+                <th>Encoder</th>
+                <th>Frames</th>
+                <th>Duration</th>
+                <th>Size</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
         </div>
-
-        <div class="quick-row">
-          <label class="inline-field">
-            <span>Workers</span>
-            <input id="workersInput" class="num-input" type="number" min="1" max="16" value="4">
-            <span class="workers-hint" id="workersHint"></span>
-          </label>
-          <label class="check-label">
-            <input id="nvencCheck" type="checkbox">
-            <span id="nvencLabel">Use GPU video encoder (NVENC)</span>
-          </label>
-        </div>
-
-        <details class="drawer" id="advancedDrawer">
-          <summary>Render settings &amp; test</summary>
-          <div class="drawer-body">
-            <div class="advanced-grid">
-              <label>Width
-                <select id="widthSelect">
-                  <option value="540" selected>540 px</option>
-                  <option value="720">720 px</option>
-                  <option value="1080">1080 px</option>
-                </select>
-              </label>
-              <label>MSAA
-                <select id="msSelect">
-                  <option value="1" selected>1x</option>
-                  <option value="2">2x</option>
-                  <option value="4">4x</option>
-                </select>
-              </label>
-              <label>Shadow map
-                <select id="smSelect">
-                  <option value="1024">1024</option>
-                  <option value="2048" selected>2048</option>
-                  <option value="4096">4096</option>
-                </select>
-              </label>
-              <button id="btnTest" class="btn-ghost" type="button">Test 5 frames (GPU)</button>
-            </div>
-          </div>
-        </details>
-
-        <details class="drawer" id="logDrawer">
-          <summary>Activity log</summary>
-          <div class="drawer-body">
-            <div class="log-box" id="logBox"></div>
-            <div class="log-actions">
-              <button id="btnClearLog" class="link-btn" type="button">Clear log</button>
-            </div>
-          </div>
-        </details>
       </section>
-    </main>
+    </div>
   </div>
+
+  <!-- THEATER VIDEO PLAYER MODAL -->
+  <div id="theaterModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="theaterTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="theaterTitle" class="modal-title">Watch MP4</h3>
+        <button id="theaterClose" class="modal-close" type="button" aria-label="Close video player">&times;</button>
+      </div>
+      <div class="modal-video-wrap">
+        <video id="theaterVideo" class="modal-video" controls loop playsinline autoplay></video>
+      </div>
+      <div class="theater-hud" id="theaterHud">
+        <span id="theaterFrameHud">f_00000 (00:00.00)</span>
+        <span id="theaterLoopHud">A-B Loop: Off</span>
+      </div>
+      <div class="theater-controls">
+        <div class="theater-btn-group">
+          <button id="theaterStepBack" class="btn-ghost btn-sm" type="button" title="Step back 1 frame (Left Arrow)">-1f</button>
+          <button id="theaterStepFwd" class="btn-ghost btn-sm" type="button" title="Step forward 1 frame (Right Arrow)">+1f</button>
+          <button id="theaterSetA" class="btn-ghost btn-sm" type="button" title="Set loop Start [I]">Set A</button>
+          <button id="theaterSetB" class="btn-ghost btn-sm" type="button" title="Set loop End [O]">Set B</button>
+          <button id="theaterClearAB" class="btn-ghost btn-sm" type="button" hidden>Clear A-B</button>
+          <select id="theaterSpeed" class="select-input" style="height: 32px;" aria-label="Playback speed">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+          <button id="theaterFullscreen" class="btn-ghost btn-sm" type="button">Fullscreen (F)</button>
+        </div>
+        <div class="theater-btn-group">
+          <button id="theaterCopyPath" class="btn-ghost btn-sm" type="button">Copy Path</button>
+          <button id="theaterReveal" class="btn-ghost btn-sm" type="button">Show in Folder</button>
+          <button id="theaterSystem" class="btn-primary btn-sm" type="button">System Player</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRAME LIGHTBOX MODAL -->
+  <div id="modalBackdrop" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="modalCaption">
+    <div class="modal-card lightbox">
+      <div class="modal-header">
+        <h3 id="modalCaption" class="modal-title">Frame Inspection</h3>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="modalZoomToggle" class="btn-ghost btn-sm" type="button">1:1 Original Size</button>
+          <button id="modalClose" class="modal-close" type="button" aria-label="Close frame inspection">&times;</button>
+        </div>
+      </div>
+      <div class="modal-img-wrap">
+        <img id="modalImg" class="modal-img" src="" alt="Full resolution frame">
+      </div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSTICS MODAL -->
+  <div id="diagModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="diagTitle">
+    <div class="modal-card compact">
+      <div class="modal-header">
+        <h3 id="diagTitle" class="modal-title">Pre-flight Asset Check</h3>
+        <button id="diagClose" class="modal-close" type="button" aria-label="Close asset diagnostics">&times;</button>
+      </div>
+      <div id="diagList" class="diag-list"></div>
+    </div>
+  </div>
+
+  <!-- KEYBOARD SHORTCUTS MODAL -->
+  <div id="shortcutsModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="shortcutsTitle" class="modal-title">Keyboard Shortcuts</h3>
+        <button id="shortcutsClose" class="modal-close" type="button" aria-label="Close shortcuts">&times;</button>
+      </div>
+      <div class="shortcut-grid">
+        <div class="shortcut-row"><span>Render Studio view</span><kbd>1</kbd></div>
+        <div class="shortcut-row"><span>Storyboard Sheet view</span><kbd>2</kbd></div>
+        <div class="shortcut-row"><span>Video Library view</span><kbd>3</kbd></div>
+        <div class="shortcut-row"><span>Play / Pause Flipbook or Video</span><kbd>Space</kbd></div>
+        <div class="shortcut-row"><span>Previous / Next Frame</span><span style="display:inline-flex;gap:4px;"><kbd>&larr;</kbd><kbd>&rarr;</kbd></span></div>
+        <div class="shortcut-row"><span>Jump 10 Frames</span><span style="display:inline-flex;gap:4px;"><kbd>&uarr;</kbd><kbd>&darr;</kbd></span></div>
+        <div class="shortcut-row"><span>First / Last Frame</span><span style="display:inline-flex;gap:4px;"><kbd>Home</kbd><kbd>End</kbd></span></div>
+        <div class="shortcut-row"><span>Mark / Unmark Active Cel</span><kbd>M</kbd></div>
+        <div class="shortcut-row"><span>Theater Set A / Set B Loop</span><span style="display:inline-flex;gap:4px;"><kbd>I</kbd><kbd>O</kbd></span></div>
+        <div class="shortcut-row"><span>Theater Fullscreen / Close</span><span style="display:inline-flex;gap:4px;"><kbd>F</kbd><kbd>Esc</kbd></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div id="confirmModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-card compact">
+      <div class="modal-header">
+        <h3 id="confirmTitle" class="modal-title">Confirm Action</h3>
+        <button id="confirmClose" class="modal-close" type="button" aria-label="Cancel">&times;</button>
+      </div>
+      <p id="confirmBody" style="margin: 0; font-size: 13.5px; color: var(--ink-muted);"></p>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button id="confirmCancel" class="btn-ghost" type="button">Cancel</button>
+        <button id="confirmOk" class="btn-stop" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL DRAG AND DROP OVERLAY -->
+  <div id="dragDropOverlay" class="drag-drop-overlay" hidden aria-hidden="true">
+    <div class="drag-drop-box">
+      <div class="drag-drop-icon" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="drag-drop-title">Drop Skies Film Archive (.zip)</div>
+      <div class="drag-drop-desc">Unpacks into films/, verifies cel animation scenes, and readies for production.</div>
+    </div>
+  </div>
+
+  <!-- IMPORT FILM MODAL -->
+  <div id="importModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <div class="modal-card compact">
+      <div class="modal-header">
+        <h3 id="importTitle" class="modal-title">Import Skies Film Archive</h3>
+        <button id="importClose" class="modal-close" type="button" aria-label="Close import dialog">&times;</button>
+      </div>
+      <div class="import-body">
+        <div class="import-file-badge mono" id="importFileName">archive.zip</div>
+
+        <div class="import-options">
+          <label class="check-label">
+            <input type="checkbox" id="importAutoRender" checked>
+            <span><strong>Auto-render frames immediately upon import</strong></span>
+          </label>
+          <div class="import-suboptions" id="importSuboptions">
+            <div class="ctrl-group">
+              <span class="ctrl-label">Engine:</span>
+              <div class="segmented" role="group" aria-label="Import render hardware mode">
+                <button id="importModeGpu" type="button" aria-pressed="true">GPU</button>
+                <button id="importModeCpu" type="button" aria-pressed="false">CPU</button>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <span class="ctrl-label">Parallel Procs:</span>
+              <input type="number" id="importProcs" class="number-input" value="4" min="1" max="16" style="width: 58px;" aria-label="Parallel worker process count">
+            </div>
+          </div>
+
+          <label class="check-label" style="margin-top: 6px;">
+            <input type="checkbox" id="importAutoEncode" checked>
+            <span><strong>Auto-encode to MP4 when render completes</strong></span>
+          </label>
+        </div>
+
+        <div id="importProgressWrap" class="import-progress-wrap" hidden>
+          <div class="import-progress-bar-bg">
+            <div id="importProgressBar" class="import-progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <div id="importProgressText" class="import-progress-text mono">Uploading and unpacking archive...</div>
+        </div>
+
+        <div class="import-actions">
+          <button id="btnBrowseLocalZip" class="btn-ghost btn-sm" type="button">Or choose on local drive...</button>
+          <div style="flex: 1;"></div>
+          <button id="btnCancelImport" class="btn-ghost" type="button">Cancel</button>
+          <button id="btnExecuteImport" class="btn-primary" type="button">Unpack & Render</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
 
   <script>
     const els = {
+      html: document.documentElement,
+      themeToggle: document.getElementById("themeToggle"),
+      chimeToggle: document.getElementById("chimeToggle"),
+      shortcutsBtn: document.getElementById("shortcutsBtn"),
+      navStudio: document.getElementById("navStudio"),
+      navStoryboard: document.getElementById("navStoryboard"),
+      navLibrary: document.getElementById("navLibrary"),
+      libraryBadge: document.getElementById("libraryBadge"),
+      viewStudio: document.getElementById("viewStudio"),
+      viewStoryboard: document.getElementById("viewStoryboard"),
+      viewLibrary: document.getElementById("viewLibrary"),
       filmSelect: document.getElementById("filmSelect"),
+      btnImportZip: document.getElementById("btnImportZip"),
+      zipFileInput: document.getElementById("zipFileInput"),
       btnAdd: document.getElementById("btnAdd"),
       btnOpenFolder: document.getElementById("btnOpenFolder"),
+      dragDropOverlay: document.getElementById("dragDropOverlay"),
+      importModal: document.getElementById("importModal"),
+      importClose: document.getElementById("importClose"),
+      importFileName: document.getElementById("importFileName"),
+      importAutoRender: document.getElementById("importAutoRender"),
+      importSuboptions: document.getElementById("importSuboptions"),
+      importModeGpu: document.getElementById("importModeGpu"),
+      importModeCpu: document.getElementById("importModeCpu"),
+      importProcs: document.getElementById("importProcs"),
+      importAutoEncode: document.getElementById("importAutoEncode"),
+      importProgressWrap: document.getElementById("importProgressWrap"),
+      importProgressBar: document.getElementById("importProgressBar"),
+      importProgressText: document.getElementById("importProgressText"),
+      btnBrowseLocalZip: document.getElementById("btnBrowseLocalZip"),
+      btnCancelImport: document.getElementById("btnCancelImport"),
+      btnExecuteImport: document.getElementById("btnExecuteImport"),
       modeGpu: document.getElementById("modeGpu"),
       modeCpu: document.getElementById("modeCpu"),
+      tabFinal: document.getElementById("tabFinal"),
+      tabTest: document.getElementById("tabTest"),
+      guideSelect: document.getElementById("guideSelect"),
+      btnCaptionToggle: document.getElementById("btnCaptionToggle"),
+      btnOnionToggle: document.getElementById("btnOnionToggle"),
+      btnCompareToggle: document.getElementById("btnCompareToggle"),
       previewBox: document.getElementById("previewBox"),
       previewEmpty: document.getElementById("previewEmpty"),
-      previewLabel: document.getElementById("previewLabel"),
-      previewFrameNum: document.getElementById("previewFrameNum"),
+      previewEmptyText: document.getElementById("previewEmptyText"),
+      onionImg: document.getElementById("onionImg"),
+      previewImg: document.getElementById("previewImg"),
+      captionOverlayImg: document.getElementById("captionOverlayImg"),
+      compareLayer: document.getElementById("compareLayer"),
+      compareTestImg: document.getElementById("compareTestImg"),
+      compareDivider: document.getElementById("compareDivider"),
+      compareTagLeft: document.getElementById("compareTagLeft"),
+      compareTagRight: document.getElementById("compareTagRight"),
+      compareSliderRow: document.getElementById("compareSliderRow"),
+      compareSlider: document.getElementById("compareSlider"),
+      guideOverlay: document.getElementById("guideOverlay"),
+      guideThirds: document.getElementById("guideThirds"),
+      guideSafe: document.getElementById("guideSafe"),
+      previewOverlayBadge: document.getElementById("previewOverlayBadge"),
+      scrubberSlider: document.getElementById("scrubberSlider"),
+      frameJumpInput: document.getElementById("frameJumpInput"),
+      scrubberTimecode: document.getElementById("scrubberTimecode"),
+      followCheck: document.getElementById("followCheck"),
+      btnFirst: document.getElementById("btnFirst"),
+      btnBack10: document.getElementById("btnBack10"),
+      btnPrev: document.getElementById("btnPrev"),
+      btnFlipbook: document.getElementById("btnFlipbook"),
+      btnNext: document.getElementById("btnNext"),
+      btnFwd10: document.getElementById("btnFwd10"),
+      btnLast: document.getElementById("btnLast"),
+      audioSyncBox: document.getElementById("audioSyncBox"),
+      audioSyncCheck: document.getElementById("audioSyncCheck"),
+      waveformCanvas: document.getElementById("waveformCanvas"),
+      audioSyncPlayer: document.getElementById("audioSyncPlayer"),
+      btnCopyFrame: document.getElementById("btnCopyFrame"),
+      btnSaveFrame: document.getElementById("btnSaveFrame"),
+      btnMarkFrame: document.getElementById("btnMarkFrame"),
+      btnRenderMarked: document.getElementById("btnRenderMarked"),
+      btnClearMarks: document.getElementById("btnClearMarks"),
+      bookmarksChips: document.getElementById("bookmarksChips"),
       filmTitle: document.getElementById("filmTitle"),
       filmSub: document.getElementById("filmSub"),
       hardwareLine: document.getElementById("hardwareLine"),
+      healthStrip: document.getElementById("healthStrip"),
+      btnDiagnostics: document.getElementById("btnDiagnostics"),
+      missingBanner: document.getElementById("missingBanner"),
+      missingBannerText: document.getElementById("missingBannerText"),
+      btnMissingBannerAction: document.getElementById("btnMissingBannerAction"),
       errorBanner: document.getElementById("errorBanner"),
       frameCount: document.getElementById("frameCount"),
       stateLabel: document.getElementById("stateLabel"),
       progressBar: document.getElementById("progressBar"),
       barFill: document.getElementById("barFill"),
+      renderMapCanvas: document.getElementById("renderMapCanvas"),
+      timelineHoverLabel: document.getElementById("timelineHoverLabel"),
       metaLeft: document.getElementById("metaLeft"),
       metaRight: document.getElementById("metaRight"),
       btnStart: document.getElementById("btnStart"),
       btnStop: document.getElementById("btnStop"),
+      btnRenderMissing: document.getElementById("btnRenderMissing"),
       btnEncode: document.getElementById("btnEncode"),
-      btnOpenMp4: document.getElementById("btnOpenMp4"),
+      btnWatchLibrary: document.getElementById("btnWatchLibrary"),
       workersInput: document.getElementById("workersInput"),
       workersHint: document.getElementById("workersHint"),
+      crfSelect: document.getElementById("crfSelect"),
       nvencCheck: document.getElementById("nvencCheck"),
       nvencLabel: document.getElementById("nvencLabel"),
+      autoEncodeCheck: document.getElementById("autoEncodeCheck"),
+      presetFast: document.getElementById("presetFast"),
+      presetStudio: document.getElementById("presetStudio"),
+      presetMaster: document.getElementById("presetMaster"),
       widthSelect: document.getElementById("widthSelect"),
       msSelect: document.getElementById("msSelect"),
       smSelect: document.getElementById("smSelect"),
+      rangeInput: document.getElementById("rangeInput"),
+      outputNameInput: document.getElementById("outputNameInput"),
       btnTest: document.getElementById("btnTest"),
+      storageDrawer: document.getElementById("storageDrawer"),
+      metFramesMb: document.getElementById("metFramesMb"),
+      metMedianKb: document.getElementById("metMedianKb"),
+      metTestMb: document.getElementById("metTestMb"),
+      metWorkerDirs: document.getElementById("metWorkerDirs"),
+      anomalyStrip: document.getElementById("anomalyStrip"),
+      btnRefreshMetrics: document.getElementById("btnRefreshMetrics"),
+      btnCleanTest: document.getElementById("btnCleanTest"),
+      btnCleanWorkers: document.getElementById("btnCleanWorkers"),
       logDrawer: document.getElementById("logDrawer"),
+      logFilterInput: document.getElementById("logFilterInput"),
       logBox: document.getElementById("logBox"),
+      btnCopyLog: document.getElementById("btnCopyLog"),
       btnClearLog: document.getElementById("btnClearLog"),
+      sbFilmTitle: document.getElementById("sbFilmTitle"),
+      sbSummary: document.getElementById("sbSummary"),
+      sbIntervalSelect: document.getElementById("sbIntervalSelect"),
+      btnSbRefresh: document.getElementById("btnSbRefresh"),
+      btnExportContactSheet: document.getElementById("btnExportContactSheet"),
+      storyboardGrid: document.getElementById("storyboardGrid"),
+      storyboardEmpty: document.getElementById("storyboardEmpty"),
+      btnSbGoStudio: document.getElementById("btnSbGoStudio"),
+      libLedgerCount: document.getElementById("libLedgerCount"),
+      libLedgerDur: document.getElementById("libLedgerDur"),
+      libLedgerDisk: document.getElementById("libLedgerDisk"),
+      libLedgerRuns: document.getElementById("libLedgerRuns"),
+      librarySearch: document.getElementById("librarySearch"),
+      librarySort: document.getElementById("librarySort"),
+      btnRefreshLibrary: document.getElementById("btnRefreshLibrary"),
+      videoGrid: document.getElementById("videoGrid"),
+      videoGridEmpty: document.getElementById("videoGridEmpty"),
+      btnLibGoStudio: document.getElementById("btnLibGoStudio"),
+      historyFilter: document.getElementById("historyFilter"),
+      btnExportCsv: document.getElementById("btnExportCsv"),
+      btnClearHistory: document.getElementById("btnClearHistory"),
+      historyTableBody: document.getElementById("historyTableBody"),
+      theaterModal: document.getElementById("theaterModal"),
+      theaterTitle: document.getElementById("theaterTitle"),
+      theaterClose: document.getElementById("theaterClose"),
+      theaterVideo: document.getElementById("theaterVideo"),
+      theaterFrameHud: document.getElementById("theaterFrameHud"),
+      theaterLoopHud: document.getElementById("theaterLoopHud"),
+      theaterStepBack: document.getElementById("theaterStepBack"),
+      theaterStepFwd: document.getElementById("theaterStepFwd"),
+      theaterSetA: document.getElementById("theaterSetA"),
+      theaterSetB: document.getElementById("theaterSetB"),
+      theaterClearAB: document.getElementById("theaterClearAB"),
+      theaterSpeed: document.getElementById("theaterSpeed"),
+      theaterFullscreen: document.getElementById("theaterFullscreen"),
+      theaterCopyPath: document.getElementById("theaterCopyPath"),
+      theaterReveal: document.getElementById("theaterReveal"),
+      theaterSystem: document.getElementById("theaterSystem"),
+      modalBackdrop: document.getElementById("modalBackdrop"),
+      modalClose: document.getElementById("modalClose"),
+      modalImg: document.getElementById("modalImg"),
+      modalCaption: document.getElementById("modalCaption"),
+      modalZoomToggle: document.getElementById("modalZoomToggle"),
+      diagModal: document.getElementById("diagModal"),
+      diagClose: document.getElementById("diagClose"),
+      diagList: document.getElementById("diagList"),
+      shortcutsModal: document.getElementById("shortcutsModal"),
+      shortcutsClose: document.getElementById("shortcutsClose"),
+      confirmModal: document.getElementById("confirmModal"),
+      confirmTitle: document.getElementById("confirmTitle"),
+      confirmBody: document.getElementById("confirmBody"),
+      confirmClose: document.getElementById("confirmClose"),
+      confirmCancel: document.getElementById("confirmCancel"),
+      confirmOk: document.getElementById("confirmOk"),
+      toastStack: document.getElementById("toastStack"),
     };
 
-    let state = {
+    const state = {
+      activeView: "studio",
       mode: "gpu",
       films: [],
       selectedFilm: "",
+      currentTitle: "",
+      totalFrames: 0,
       logOffset: 0,
-      lastPreviewKey: "",
       system: null,
       workersEdited: false,
+      previewSource: "final",
+      activeFrame: null,
+      renderedFrames: [],
+      testFrames: [],
+      lastMtime: 0,
+      lastValidationKey: "",
+      lastChecks: [],
+      libraryVideos: [],
+      libraryHistory: [],
+      activeVideoItem: null,
+      flipbookTimer: null,
+      compareActive: false,
+      captionActive: false,
+      onionActive: false,
+      waveformBars: [],
+      waveformDuration: 0,
+      bookmarks: [],
+      rawLogs: [],
+      abLoop: { a: null, b: null },
+      loadedMetricsFilm: "",
+      prevRunning: null,
+      chimeEnabled: localStorage.getItem("skies_chime") !== "false",
+      confirmCallback: null,
+      loadedAudioFilm: "",
+      lastStoryboardKey: "",
     };
+
+    function formatTimecode(frameIdx) {
+      const totalSec = Math.max(0, Number(frameIdx) || 0) / 30;
+      const mins = Math.floor(totalSec / 60);
+      const secs = Math.floor(totalSec % 60);
+      const frames = Math.round((totalSec - Math.floor(totalSec)) * 30);
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(frames).padStart(2, "0")}`;
+    }
+
+    function showToast(msg, type = "ok") {
+      const el = document.createElement("div");
+      el.className = "toast";
+      const tag = document.createElement("span");
+      tag.className = `toast-tag ${type}`;
+      tag.textContent = type === "ok" ? "OK" : "ERR";
+      const text = document.createElement("span");
+      text.textContent = msg;
+      el.appendChild(tag);
+      el.appendChild(text);
+      els.toastStack.appendChild(el);
+      setTimeout(() => el.remove(), 2800);
+    }
+
+    function playCompletionChime() {
+      if (!state.chimeEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        [587.33, 880.0].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + i * 0.14);
+          gain.gain.setValueAtTime(0.001, now + i * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.11, now + i * 0.14 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.14 + 0.6);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.14);
+          osc.stop(now + i * 0.14 + 0.65);
+        });
+      } catch (_) {}
+    }
+
+    // Theme switching (Parchment vs Darkroom)
+    function setTheme(t) {
+      const theme = t === "light" ? "light" : "dark";
+      els.html.setAttribute("data-theme", theme);
+      els.themeToggle.textContent = theme === "light" ? "Theme: Parchment" : "Theme: Darkroom";
+      localStorage.setItem("skies_theme", theme);
+      drawRenderMap();
+    }
+    setTheme(localStorage.getItem("skies_theme") || "dark");
+
+    els.themeToggle.addEventListener("click", () => {
+      const next = els.html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      setTheme(next);
+      showToast(`Switched to ${next === "light" ? "Parchment" : "Darkroom"} theme`);
+    });
+
+    function updateChimeButton() {
+      els.chimeToggle.setAttribute("aria-pressed", String(state.chimeEnabled));
+      els.chimeToggle.textContent = state.chimeEnabled ? "Chime: On" : "Chime: Off";
+    }
+    updateChimeButton();
+
+    els.chimeToggle.addEventListener("click", () => {
+      state.chimeEnabled = !state.chimeEnabled;
+      localStorage.setItem("skies_chime", String(state.chimeEnabled));
+      updateChimeButton();
+      showToast(state.chimeEnabled ? "Completion chime enabled" : "Completion chime muted");
+    });
+
+    function openConfirm(title, bodyText, okLabel, onConfirm) {
+      els.confirmTitle.textContent = title;
+      els.confirmBody.textContent = bodyText;
+      els.confirmOk.textContent = okLabel;
+      state.confirmCallback = onConfirm;
+      els.confirmModal.hidden = false;
+    }
+
+    function closeConfirm() {
+      els.confirmModal.hidden = true;
+      state.confirmCallback = null;
+    }
+
+    els.confirmClose.addEventListener("click", closeConfirm);
+    els.confirmCancel.addEventListener("click", closeConfirm);
+    els.confirmModal.addEventListener("click", e => { if (e.target === els.confirmModal) closeConfirm(); });
+    els.confirmOk.addEventListener("click", async () => {
+      const cb = state.confirmCallback;
+      closeConfirm();
+      if (cb) await cb();
+    });
+
+    function switchView(viewName) {
+      state.activeView = viewName;
+      if (viewName !== "studio") stopFlipbook();
+
+      const map = [
+        [els.navStudio, els.viewStudio, "studio"],
+        [els.navStoryboard, els.viewStoryboard, "storyboard"],
+        [els.navLibrary, els.viewLibrary, "library"],
+      ];
+      for (const [btn, panel, key] of map) {
+        const active = key === viewName;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", String(active));
+        panel.hidden = !active;
+      }
+
+      if (viewName === "library") loadLibraryData();
+      if (viewName === "storyboard") renderStoryboardSheet();
+    }
+
+    els.navStudio.addEventListener("click", () => switchView("studio"));
+    els.navStoryboard.addEventListener("click", () => switchView("storyboard"));
+    els.navLibrary.addEventListener("click", () => switchView("library"));
+    els.btnSbGoStudio.addEventListener("click", () => switchView("studio"));
+    els.btnLibGoStudio.addEventListener("click", () => switchView("studio"));
+
+    els.btnWatchLibrary.addEventListener("click", () => {
+      const match = (state.libraryVideos || []).find(v => v.filmId === state.selectedFilm);
+      if (match) openTheaterModal(match);
+      else switchView("library");
+    });
 
     async function api(path, body) {
       const res = await fetch(path, body !== undefined ? {
@@ -748,26 +2853,26 @@
       if (!sys) return;
       const rec = state.mode === "gpu" ? sys.recommendedGpuWorkers : sys.recommendedCpuWorkers;
       els.workersInput.max = String(sys.maxWorkers);
-      els.workersHint.textContent = `Rec ${rec} · Max ${sys.maxWorkers}`;
-      if (!state.workersEdited) {
-        els.workersInput.value = String(rec);
-      }
+      els.workersHint.textContent = `Rec ${rec} (Max ${sys.maxWorkers})`;
+      if (!state.workersEdited) els.workersInput.value = String(rec);
     }
 
     function applySystemInfo(sys) {
       if (!sys || state.system) return;
       state.system = sys;
       els.modeGpu.textContent = sys.hasGpu ? `GPU (${sys.gpuShort})` : "GPU (Unavailable)";
-      if (!sys.hasGpu) {
-        setMode("cpu");
-      }
-      const ramPart = sys.ramGb > 0 ? ` · ${sys.ramGb} GB RAM` : "";
-      const vramPart = sys.vramGb ? ` (${sys.vramGb} GB)` : "";
-      els.hardwareLine.textContent =
-        `${sys.cpuName} (${sys.physicalCores}C/${sys.logicalCores}T${ramPart}) · ${sys.primaryGpu}${vramPart}`;
+      if (!sys.hasGpu) setMode("cpu");
+      const ramPart = sys.ramGb > 0 ? `, ${sys.ramGb} GB RAM` : "";
+      const vramPart = sys.vramGb ? ` (${sys.vramGb} GB VRAM)` : "";
+      els.hardwareLine.textContent = `${sys.cpuName} (${sys.physicalCores}C/${sys.logicalCores}T${ramPart}) | ${sys.primaryGpu}${vramPart}`;
+
       if (!sys.hasNvenc) {
         els.nvencCheck.checked = false;
-        els.nvencLabel.textContent = "GPU video encoder (NVENC unavailable)";
+        els.nvencCheck.disabled = true;
+        els.nvencLabel.textContent = `NVENC (${sys.nvencStatus || "Unavailable"})`;
+      } else {
+        els.nvencCheck.checked = true;
+        els.nvencLabel.textContent = "Use NVENC GPU encoder";
       }
       updateWorkersHint();
     }
@@ -780,10 +2885,494 @@
       updateWorkersHint();
     }
 
+    function setPreviewSource(src) {
+      stopFlipbook();
+      state.previewSource = src;
+      els.tabFinal.setAttribute("aria-selected", String(src === "final"));
+      els.tabTest.setAttribute("aria-selected", String(src === "test"));
+      updateScrubberRange();
+      updatePreviewImage();
+    }
+
+    // Visual Safe Guides Overlay
+    els.guideSelect.addEventListener("change", () => {
+      const val = els.guideSelect.value;
+      els.guideOverlay.hidden = val === "none";
+      els.guideThirds.hidden = val !== "thirds";
+      els.guideSafe.hidden = val !== "safe";
+    });
+
+    // Compare wipe between Final and matching GPU Test frame
+    function updateCompareState() {
+      const canCompare = state.previewSource === "final"
+        && state.activeFrame !== null
+        && (state.testFrames || []).includes(state.activeFrame);
+
+      els.btnCompareToggle.hidden = !canCompare;
+      if (!canCompare && state.compareActive) {
+        state.compareActive = false;
+        els.btnCompareToggle.setAttribute("aria-pressed", "false");
+      }
+
+      const showCompare = canCompare && state.compareActive;
+      els.compareLayer.hidden = !showCompare;
+      els.compareDivider.hidden = !showCompare;
+      els.compareTagLeft.hidden = !showCompare;
+      els.compareTagRight.hidden = !showCompare;
+      els.compareSliderRow.hidden = !showCompare;
+
+      if (showCompare) {
+        els.compareTestImg.src = `/api/preview?film=${encodeURIComponent(state.selectedFilm)}&frame=${state.activeFrame}&source=test&t=${state.lastMtime}`;
+        applyCompareSplit(Number(els.compareSlider.value));
+      }
+    }
+
+    function applyCompareSplit(pct) {
+      const clamped = Math.max(0, Math.min(100, pct));
+      // Show Test frame on right side of wipe line using clip-path
+      els.compareLayer.style.clipPath = `inset(0 0 0 ${clamped}%)`;
+      els.compareDivider.style.left = `${clamped}%`;
+    }
+
+    els.btnCompareToggle.addEventListener("click", () => {
+      state.compareActive = !state.compareActive;
+      els.btnCompareToggle.setAttribute("aria-pressed", String(state.compareActive));
+      updateCompareState();
+    });
+
+    els.compareSlider.addEventListener("input", e => applyCompareSplit(Number(e.target.value)));
+
+    function updateScrubberRange() {
+      const isTest = state.previewSource === "test";
+      const list = isTest ? state.testFrames : state.renderedFrames;
+
+      if (!list || list.length === 0) {
+        els.scrubberSlider.disabled = true;
+        els.scrubberSlider.min = "0";
+        els.scrubberSlider.max = "0";
+        els.scrubberSlider.value = "0";
+        els.frameJumpInput.value = "0";
+        els.frameJumpInput.disabled = true;
+        els.scrubberTimecode.textContent = "00:00.00";
+        [els.btnFirst, els.btnBack10, els.btnPrev, els.btnFlipbook, els.btnNext, els.btnFwd10, els.btnLast, els.btnCopyFrame, els.btnSaveFrame]
+          .forEach(b => { b.disabled = true; });
+        els.previewOverlayBadge.hidden = true;
+        updateCompareState();
+        return;
+      }
+
+      els.scrubberSlider.disabled = false;
+      els.frameJumpInput.disabled = false;
+      els.btnFlipbook.disabled = list.length < 2;
+      els.btnCopyFrame.disabled = false;
+      els.btnSaveFrame.disabled = false;
+      els.scrubberSlider.min = "0";
+      els.scrubberSlider.max = String(list.length - 1);
+
+      if (state.activeFrame === null || els.followCheck.checked) {
+        state.activeFrame = list[list.length - 1];
+      }
+
+      const idx = list.indexOf(state.activeFrame);
+      const validIdx = idx >= 0 ? idx : list.length - 1;
+      state.activeFrame = list[validIdx];
+      els.scrubberSlider.value = String(validIdx);
+
+      if (document.activeElement !== els.frameJumpInput) {
+        els.frameJumpInput.value = String(state.activeFrame);
+      }
+      els.scrubberTimecode.textContent = `${formatTimecode(state.activeFrame)} (${validIdx + 1}/${list.length})`;
+
+      els.btnFirst.disabled = validIdx <= 0;
+      els.btnBack10.disabled = validIdx <= 0;
+      els.btnPrev.disabled = validIdx <= 0;
+      els.btnNext.disabled = validIdx >= list.length - 1;
+      els.btnFwd10.disabled = validIdx >= list.length - 1;
+      els.btnLast.disabled = validIdx >= list.length - 1;
+      updateCompareState();
+    }
+
+    function updatePreviewImage() {
+      const isTest = state.previewSource === "test";
+      const list = isTest ? state.testFrames : state.renderedFrames;
+
+      if (!list || list.length === 0 || state.activeFrame === null) {
+        els.previewImg.style.display = "none";
+        els.onionImg.hidden = true;
+        els.captionOverlayImg.hidden = true;
+        els.previewEmpty.hidden = false;
+        els.previewOverlayBadge.hidden = true;
+        els.previewEmptyText.textContent = isTest
+          ? "No test frames in test_gpu/ yet. Open Engine parameters to run a 5-frame GPU test."
+          : "No rendered frames yet. Click Start Render to render PNG frames.";
+        return;
+      }
+
+      els.previewEmpty.hidden = true;
+      els.previewImg.style.display = "block";
+      els.previewOverlayBadge.hidden = false;
+      els.previewOverlayBadge.textContent = `f_${String(state.activeFrame).padStart(5, "0")}`;
+      const srcUrl = `/api/preview?film=${encodeURIComponent(state.selectedFilm)}&frame=${state.activeFrame}&source=${state.previewSource}&t=${state.lastMtime}`;
+      if (els.previewImg.src !== new URL(srcUrl, location.href).href) {
+        els.previewImg.src = srcUrl;
+      }
+
+      // Onion-skin previous cel (f - 1)
+      const prevIdx = list.indexOf(state.activeFrame) - 1;
+      if (state.onionActive && prevIdx >= 0) {
+        els.onionImg.src = `/api/preview?film=${encodeURIComponent(state.selectedFilm)}&frame=${list[prevIdx]}&source=${state.previewSource}&t=${state.lastMtime}`;
+        els.onionImg.hidden = false;
+      } else {
+        els.onionImg.hidden = true;
+      }
+
+      // Live burnt-in caption preview matching encode.py y=60.6%
+      if (state.captionActive && !els.btnCaptionToggle.hidden) {
+        const capUrl = `/api/caption?film=${encodeURIComponent(state.selectedFilm)}&frame=${state.activeFrame}&t=${state.lastMtime}`;
+        els.captionOverlayImg.src = capUrl;
+        els.captionOverlayImg.hidden = false;
+      } else {
+        els.captionOverlayImg.hidden = true;
+      }
+    }
+
+    els.captionOverlayImg.addEventListener("error", () => {
+      els.captionOverlayImg.hidden = true;
+    });
+
+    els.btnCaptionToggle.addEventListener("click", () => {
+      state.captionActive = !state.captionActive;
+      els.btnCaptionToggle.setAttribute("aria-pressed", String(state.captionActive));
+      updatePreviewImage();
+    });
+
+    els.btnOnionToggle.addEventListener("click", () => {
+      state.onionActive = !state.onionActive;
+      els.btnOnionToggle.setAttribute("aria-pressed", String(state.onionActive));
+      updatePreviewImage();
+    });
+
+    // Audio Waveform Visualization & Interactive Seeking
+    async function loadAudioWaveform(filmId) {
+      try {
+        const wf = await api(`/api/waveform?film=${encodeURIComponent(filmId)}&bars=180`);
+        state.waveformBars = wf.bars || [];
+        state.waveformDuration = wf.duration || 0;
+        drawWaveform();
+      } catch (_) {
+        state.waveformBars = [];
+      }
+    }
+
+    function drawWaveform() {
+      const canvas = els.waveformCanvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      const styles = getComputedStyle(document.documentElement);
+      const bg = styles.getPropertyValue("--bg").trim() || "#161412";
+      const barCol = styles.getPropertyValue("--border-strong").trim() || "#7a7066";
+      const accCol = styles.getPropertyValue("--accent").trim() || "#e05a36";
+
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+
+      const bars = state.waveformBars || [];
+      if (!bars.length) return;
+      const barW = Math.max(1, w / bars.length);
+      const progressFrac = els.audioSyncPlayer.duration
+        ? (els.audioSyncPlayer.currentTime / els.audioSyncPlayer.duration)
+        : 0;
+
+      for (let i = 0; i < bars.length; i++) {
+        const amp = Math.max(0.08, bars[i]);
+        const bh = amp * (h - 6);
+        const x = i * barW;
+        const y = (h - bh) / 2;
+        ctx.fillStyle = (i / bars.length) <= progressFrac ? accCol : barCol;
+        ctx.fillRect(x, y, Math.max(1, barW - 0.6), bh);
+      }
+    }
+
+    els.waveformCanvas.addEventListener("click", e => {
+      const dur = els.audioSyncPlayer.duration || state.waveformDuration;
+      if (!dur) return;
+      const rect = els.waveformCanvas.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      els.audioSyncPlayer.currentTime = frac * dur;
+      const targetFrame = Math.round(els.audioSyncPlayer.currentTime * 30);
+      if (state.renderedFrames.includes(targetFrame)) {
+        els.followCheck.checked = false;
+        if (state.previewSource !== "final") setPreviewSource("final");
+        const idx = state.renderedFrames.indexOf(targetFrame);
+        if (idx >= 0) jumpToIndex(idx);
+      }
+      drawWaveform();
+    });
+
+    // Audio-Synced Cel Scrubbing
+    els.audioSyncPlayer.addEventListener("timeupdate", () => {
+      drawWaveform();
+      if (!els.audioSyncCheck.checked || !state.renderedFrames.length) return;
+      const targetFrame = Math.round(els.audioSyncPlayer.currentTime * 30);
+      if (state.renderedFrames.includes(targetFrame) && state.activeFrame !== targetFrame) {
+        els.followCheck.checked = false;
+        if (state.previewSource !== "final") setPreviewSource("final");
+        state.activeFrame = targetFrame;
+        updateScrubberRange();
+        updatePreviewImage();
+        drawRenderMap();
+      }
+    });
+
+    // Frame Bookmarks (stored per film in localStorage)
+    function loadBookmarksForFilm(filmId) {
+      if (!filmId) { state.bookmarks = []; renderBookmarks(); return; }
+      try {
+        const raw = localStorage.getItem(`skies_marks_${filmId}`);
+        state.bookmarks = raw ? JSON.parse(raw) : [];
+      } catch (_) {
+        state.bookmarks = [];
+      }
+      renderBookmarks();
+    }
+
+    function saveBookmarksForFilm() {
+      if (!state.selectedFilm) return;
+      localStorage.setItem(`skies_marks_${state.selectedFilm}`, JSON.stringify(state.bookmarks));
+      renderBookmarks();
+      drawRenderMap();
+    }
+
+    function toggleBookmarkActiveFrame() {
+      if (state.activeFrame === null) return;
+      const f = state.activeFrame;
+      const idx = state.bookmarks.indexOf(f);
+      if (idx >= 0) {
+        state.bookmarks.splice(idx, 1);
+        showToast(`Unmarked f_${String(f).padStart(5, "0")}`);
+      } else {
+        state.bookmarks.push(f);
+        state.bookmarks.sort((a, b) => a - b);
+        showToast(`Marked f_${String(f).padStart(5, "0")}`);
+      }
+      saveBookmarksForFilm();
+    }
+
+    function renderBookmarks() {
+      const list = state.bookmarks || [];
+      els.bookmarksChips.innerHTML = "";
+      els.btnRenderMarked.hidden = list.length === 0;
+      els.btnClearMarks.hidden = list.length === 0;
+      for (const f of list) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "bookmark-chip";
+        chip.textContent = `f_${String(f).padStart(5, "0")}`;
+        chip.title = `Jump to frame ${f}`;
+        chip.addEventListener("click", () => {
+          const i = state.renderedFrames.indexOf(f);
+          if (i >= 0) {
+            if (state.previewSource !== "final") setPreviewSource("final");
+            jumpToIndex(i);
+          }
+        });
+        els.bookmarksChips.appendChild(chip);
+      }
+    }
+
+    els.btnMarkFrame.addEventListener("click", toggleBookmarkActiveFrame);
+    els.btnClearMarks.addEventListener("click", () => {
+      state.bookmarks = [];
+      saveBookmarksForFilm();
+      showToast("Cleared frame marks");
+    });
+
+    els.btnRenderMarked.addEventListener("click", async () => {
+      if (!state.bookmarks.length) return;
+      showError("");
+      try {
+        await api("/api/render/start", {
+          film: state.selectedFilm,
+          mode: state.mode,
+          procs: Number(els.workersInput.value) || 4,
+          w: Number(els.widthSelect.value),
+          ms: Number(els.msSelect.value),
+          sm: Number(els.smSelect.value),
+          range: state.bookmarks.join(","),
+        });
+        showToast(`Re-rendering ${state.bookmarks.length} marked cels`);
+        await poll();
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    function startFlipbook() {
+      const list = state.previewSource === "test" ? state.testFrames : state.renderedFrames;
+      if (!list || list.length < 2) return;
+      els.followCheck.checked = false;
+      els.btnFlipbook.classList.add("is-playing");
+      els.btnFlipbook.textContent = "Pause";
+      state.flipbookTimer = setInterval(() => {
+        const curList = state.previewSource === "test" ? state.testFrames : state.renderedFrames;
+        if (!curList || curList.length < 2) { stopFlipbook(); return; }
+        let idx = curList.indexOf(state.activeFrame);
+        idx = (idx + 1) % curList.length;
+        state.activeFrame = curList[idx];
+        els.scrubberSlider.value = String(idx);
+        els.frameJumpInput.value = String(state.activeFrame);
+        els.scrubberTimecode.textContent = `${formatTimecode(state.activeFrame)} (${idx + 1}/${curList.length})`;
+        updatePreviewImage();
+      }, 42);
+    }
+
+    function stopFlipbook() {
+      if (state.flipbookTimer) {
+        clearInterval(state.flipbookTimer);
+        state.flipbookTimer = null;
+      }
+      els.btnFlipbook.classList.remove("is-playing");
+      els.btnFlipbook.textContent = "Play";
+    }
+
+    els.btnFlipbook.addEventListener("click", () => {
+      if (state.flipbookTimer) stopFlipbook();
+      else startFlipbook();
+    });
+
+    // Interactive Render Coverage Map Canvas
+    function drawRenderMap() {
+      const canvas = els.renderMapCanvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      const total = state.totalFrames || 0;
+
+      const styles = getComputedStyle(document.documentElement);
+      const bg = styles.getPropertyValue("--bg").trim() || "#161412";
+      const okColor = styles.getPropertyValue("--success").trim() || "#4ade80";
+      const missColor = styles.getPropertyValue("--danger").trim() || "#f87171";
+
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      if (total <= 0) return;
+
+      const doneSet = new Set(state.renderedFrames || []);
+      const pxWidth = Math.max(1, w / total);
+      for (let i = 0; i < total; i++) {
+        const x = Math.floor((i / total) * w);
+        if (doneSet.has(i)) {
+          ctx.fillStyle = okColor;
+          ctx.fillRect(x, 0, Math.ceil(pxWidth), h);
+        } else if (doneSet.size > 0) {
+          ctx.fillStyle = missColor;
+          ctx.fillRect(x, 0, Math.ceil(pxWidth), h);
+        }
+      }
+
+      // Plot bookmarked cel ticks along the top edge
+      if (state.bookmarks && state.bookmarks.length) {
+        ctx.fillStyle = styles.getPropertyValue("--accent").trim() || "#e05a36";
+        for (const bm of state.bookmarks) {
+          const bx = Math.floor((bm / Math.max(1, total - 1)) * (w - 3));
+          ctx.fillRect(bx, 0, 3, 5);
+        }
+      }
+
+      if (state.activeFrame !== null) {
+        const markerX = Math.floor((state.activeFrame / Math.max(1, total - 1)) * (w - 2));
+        ctx.fillStyle = styles.getPropertyValue("--ink").trim() || "#ffffff";
+        ctx.fillRect(markerX, 0, 2, h);
+      }
+    }
+
+    els.renderMapCanvas.addEventListener("mousemove", e => {
+      if (!state.totalFrames) return;
+      const rect = els.renderMapCanvas.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const frame = Math.round(frac * (state.totalFrames - 1));
+      const exists = (state.renderedFrames || []).includes(frame);
+      els.timelineHoverLabel.textContent = `f_${String(frame).padStart(5, "0")} (${exists ? "rendered" : "missing"})`;
+    });
+
+    els.renderMapCanvas.addEventListener("mouseleave", () => {
+      els.timelineHoverLabel.textContent = "";
+    });
+
+    els.renderMapCanvas.addEventListener("click", e => {
+      const list = state.renderedFrames || [];
+      if (!state.totalFrames || !list.length) return;
+      const rect = els.renderMapCanvas.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const target = Math.round(frac * (state.totalFrames - 1));
+      const closestIdx = list.reduce((best, val, i) => Math.abs(val - target) < Math.abs(list[best] - target) ? i : best, 0);
+      if (state.previewSource !== "final") setPreviewSource("final");
+      jumpToIndex(closestIdx);
+    });
+
+    async function checkHealth(filmId, force = false) {
+      if (!filmId || (!force && state.lastValidationKey === filmId)) return;
+      state.lastValidationKey = filmId;
+      try {
+        const val = await api(`/api/validate?film=${encodeURIComponent(filmId)}`);
+        state.lastChecks = val.checks || [];
+        els.healthStrip.innerHTML = "";
+        for (const c of state.lastChecks) {
+          const badge = document.createElement("button");
+          badge.type = "button";
+          badge.className = `health-badge status-${c.status}`;
+          badge.title = c.detail;
+          const prefix = c.status === "ok" ? "PASS" : (c.status === "error" ? "ERR" : "WARN");
+          badge.textContent = `${c.name}: ${prefix}`;
+          badge.addEventListener("click", openDiagnosticsModal);
+          els.healthStrip.appendChild(badge);
+        }
+      } catch (_) {}
+    }
+
+    function openDiagnosticsModal() {
+      els.diagList.innerHTML = "";
+      if (!state.lastChecks.length) {
+        const empty = document.createElement("div");
+        empty.className = "diag-row";
+        empty.innerHTML = "<strong>No diagnostic checks loaded</strong><span>Select a valid film folder first.</span>";
+        els.diagList.appendChild(empty);
+      } else {
+        for (const c of state.lastChecks) {
+          const row = document.createElement("div");
+          row.className = "diag-row";
+          const tag = c.status === "ok" ? "PASS" : (c.status === "error" ? "ERROR" : "NOTE");
+          row.innerHTML = `<strong>${c.name} (${tag})</strong><span>${c.detail}</span>`;
+          els.diagList.appendChild(row);
+        }
+      }
+      els.diagModal.hidden = false;
+    }
+
+    els.btnDiagnostics.addEventListener("click", () => {
+      checkHealth(state.selectedFilm, true).then(openDiagnosticsModal);
+    });
+    els.diagClose.addEventListener("click", () => { els.diagModal.hidden = true; });
+    els.diagModal.addEventListener("click", e => { if (e.target === els.diagModal) els.diagModal.hidden = true; });
+
     function renderUI(data) {
+      if (state.prevRunning && data.running === null && !data.lastError) {
+        playCompletionChime();
+        showToast(state.prevRunning === "encode" ? "MP4 encode finished cleanly" : "Render job completed");
+        loadLibraryData();
+        checkHealth(data.selectedFilm, true);
+      }
+      state.prevRunning = data.running;
+
       applySystemInfo(data.system);
       const filmChanged = JSON.stringify(data.films.map(f => f.id)) !== JSON.stringify(state.films.map(f => f.id));
       state.films = data.films;
+
+      if (data.videoCount !== undefined) els.libraryBadge.textContent = String(data.videoCount);
+
       if (filmChanged) {
         els.filmSelect.innerHTML = "";
         if (data.films.length === 0) {
@@ -813,120 +3402,1063 @@
       els.modeGpu.disabled = busy || (state.system && !state.system.hasGpu);
       els.modeCpu.disabled = busy;
       els.workersInput.disabled = busy;
+      els.crfSelect.disabled = busy;
       els.widthSelect.disabled = busy;
       els.msSelect.disabled = busy;
       els.smSelect.disabled = busy;
-      els.nvencCheck.disabled = busy || (state.system && !state.system.hasNvenc);
+      els.rangeInput.disabled = busy;
       els.btnTest.disabled = busy || !cur || (state.system && !state.system.hasGpu);
 
       if (!cur) {
+        state.currentTitle = "";
+        state.totalFrames = 0;
         els.filmTitle.textContent = "No film folder loaded";
-        els.filmSub.textContent = "Drop a film into films/ or click Add folder.";
+        els.filmSub.textContent = "Place a film folder in films/ or click Add Folder.";
         els.frameCount.innerHTML = "0 <span>/ 0 frames</span>";
-        els.stateLabel.textContent = "Empty";
+        els.stateLabel.textContent = "No Project";
         els.stateLabel.className = "state-label";
         els.barFill.style.width = "0%";
         els.btnStart.disabled = true;
         els.btnEncode.disabled = true;
         els.btnStop.hidden = true;
-        els.btnOpenMp4.hidden = true;
+        els.btnWatchLibrary.hidden = true;
+        els.btnRenderMissing.hidden = true;
+        els.missingBanner.hidden = true;
+        els.audioSyncBox.hidden = true;
+        drawRenderMap();
         return;
       }
 
+      checkHealth(cur.id);
+      state.currentTitle = cur.title;
+      state.totalFrames = cur.totalFrames;
+
+      els.btnCaptionToggle.hidden = !cur.hasCaptions;
+      if (!cur.hasCaptions && state.captionActive) {
+        state.captionActive = false;
+        els.btnCaptionToggle.setAttribute("aria-pressed", "false");
+      }
+
+      // Audio Mix & Waveform setup when active film changes
+      if (cur.hasAudio) {
+        els.audioSyncBox.hidden = false;
+        if (state.loadedAudioFilm !== cur.id) {
+          state.loadedAudioFilm = cur.id;
+          els.audioSyncPlayer.src = `/api/audio?film=${encodeURIComponent(cur.id)}`;
+          loadAudioWaveform(cur.id);
+        }
+      } else {
+        els.audioSyncBox.hidden = true;
+        if (state.loadedAudioFilm) {
+          els.audioSyncPlayer.removeAttribute("src");
+          state.loadedAudioFilm = "";
+          state.waveformBars = [];
+        }
+      }
+
+      if (state.loadedMetricsFilm !== cur.id) {
+        state.loadedMetricsFilm = cur.id;
+        loadBookmarksForFilm(cur.id);
+        loadFilmMetrics(cur.id);
+      }
+
       els.filmTitle.textContent = cur.title;
-      els.filmSub.textContent = `${cur.totalFrames.toLocaleString()} frames · 1080×1920 @ 30 fps · ${cur.output}`;
+      els.filmSub.textContent = `${cur.totalFrames.toLocaleString()} frames, 1080x1920 at 30 fps, Output: ${cur.output}`;
 
       const done = cur.done;
       const total = cur.totalFrames;
       const pct = total > 0 ? Math.min(100, (done / total) * 100) : 0;
 
-      els.frameCount.innerHTML = `${done.toLocaleString()} <span>/ ${total.toLocaleString()} frames</span>`;
-      els.barFill.style.width = `${pct.toFixed(1)}%`;
-      els.progressBar.setAttribute("aria-valuenow", String(Math.round(pct)));
-      els.barFill.classList.toggle("is-done", done >= total && total > 0);
+      state.renderedFrames = cur.renderedFrames || [];
+      state.testFrames = cur.testFrames || [];
+      state.lastMtime = cur.latestFrameMtime || 0;
+
+      els.tabTest.textContent = `Test (${state.testFrames.length})`;
+      els.tabFinal.textContent = `Final (${state.renderedFrames.length})`;
+
+      if (data.running === "encode" && data.encodeProgress && data.encodeProgress.total > 0) {
+        const ep = data.encodeProgress;
+        els.frameCount.innerHTML = `${ep.frame.toLocaleString()} <span>/ ${ep.total.toLocaleString()} encoded</span>`;
+        els.barFill.style.width = `${ep.pct.toFixed(1)}%`;
+        els.progressBar.setAttribute("aria-valuenow", String(Math.round(ep.pct)));
+        els.barFill.className = "bar-fill is-encode";
+      } else {
+        els.frameCount.innerHTML = `${done.toLocaleString()} <span>/ ${total.toLocaleString()} frames</span>`;
+        els.barFill.style.width = `${pct.toFixed(1)}%`;
+        els.progressBar.setAttribute("aria-valuenow", String(Math.round(pct)));
+        els.barFill.className = done >= total && total > 0 ? "bar-fill is-done" : "bar-fill";
+      }
 
       els.stateLabel.className = "state-label";
       if (data.running === "render") {
-        els.stateLabel.textContent = `Rendering on ${state.mode.toUpperCase()} (${pct.toFixed(1)}%)`;
+        els.stateLabel.textContent = `Rendering ${state.mode.toUpperCase()} (${pct.toFixed(1)}%)`;
         els.stateLabel.classList.add("is-running");
       } else if (data.running === "test") {
         els.stateLabel.textContent = "Running 5-frame GPU test";
         els.stateLabel.classList.add("is-running");
       } else if (data.running === "encode") {
-        els.stateLabel.textContent = "Encoding MP4";
+        els.stateLabel.textContent = `Encoding MP4 (${data.encodeProgress ? data.encodeProgress.pct.toFixed(1) + "%" : ""})`;
         els.stateLabel.classList.add("is-running");
       } else if (done >= total && total > 0) {
-        els.stateLabel.textContent = cur.mp4Exists ? "MP4 ready" : "All frames rendered";
+        els.stateLabel.textContent = cur.mp4Exists ? "MP4 Ready" : "All Frames Complete";
         els.stateLabel.classList.add("is-done");
       } else if (done > 0) {
         els.stateLabel.textContent = `${(total - done).toLocaleString()} remaining`;
       } else {
-        els.stateLabel.textContent = "Ready to render";
+        els.stateLabel.textContent = "Ready";
       }
 
       els.metaLeft.textContent = data.metaLeft || "";
       els.metaRight.textContent = data.metaRight || "";
 
-      // Action buttons: promote the actual next step as primary
+      const hasMissing = cur.missingCount > 0 && done > 0 && done < total && !busy;
+      if (hasMissing) {
+        const ranges = (cur.missingRanges && cur.missingRanges.length) ? cur.missingRanges.join(", ") : `${cur.missingCount} frames`;
+        els.missingBannerText.textContent = `${cur.missingCount} missing frames: ${ranges}`;
+        els.missingBanner.hidden = false;
+      } else {
+        els.missingBanner.hidden = true;
+      }
+
       els.btnStart.hidden = busy || (done >= total && total > 0);
       els.btnStop.hidden = !busy;
       els.btnStart.disabled = busy || done >= total;
       els.btnStart.textContent = done > 0 && done < total ? "Resume Render" : "Start Render";
+
+      els.btnRenderMissing.hidden = !hasMissing;
+      els.btnRenderMissing.textContent = `Render ${cur.missingCount} Missing`;
+
       els.btnEncode.disabled = busy || done < total;
-      els.btnOpenMp4.hidden = !cur.mp4Exists || busy;
-
+      els.btnWatchLibrary.hidden = !cur.mp4Exists || busy;
       els.btnEncode.className = (done >= total && !cur.mp4Exists && !busy) ? "btn-primary" : "btn-secondary";
-      els.btnOpenMp4.className = (done >= total && cur.mp4Exists && !busy) ? "btn-primary" : "btn-ghost";
 
-      // Preview image
-      let imgEl = document.getElementById("previewImg");
-      if (cur.latestFrame !== null) {
-        const key = `${cur.id}:${cur.latestFrame}:${cur.latestFrameMtime}`;
-        if (!imgEl) {
-          imgEl = document.createElement("img");
-          imgEl.id = "previewImg";
-          imgEl.alt = "Latest rendered frame";
-          els.previewBox.appendChild(imgEl);
+      if (!state.flipbookTimer) {
+        updateScrubberRange();
+        updatePreviewImage();
+      }
+      drawRenderMap();
+
+      if (state.activeView === "storyboard") {
+        const sbKey = `${cur.id}:${done}:${state.lastMtime}:${els.sbIntervalSelect.value}`;
+        if (state.lastStoryboardKey !== sbKey) {
+          renderStoryboardSheet();
         }
-        if (key !== state.lastPreviewKey) {
-          state.lastPreviewKey = key;
-          imgEl.src = `/api/preview?film=${encodeURIComponent(cur.id)}&t=${cur.latestFrameMtime}`;
-        }
-        imgEl.hidden = false;
-        els.previewEmpty.hidden = true;
-        els.previewLabel.textContent = "Latest frame";
-        els.previewFrameNum.textContent = `#${cur.latestFrame}`;
-      } else {
-        if (imgEl) imgEl.remove();
-        els.previewEmpty.hidden = false;
-        els.previewLabel.textContent = "Preview";
-        els.previewFrameNum.textContent = "";
-        state.lastPreviewKey = "";
       }
 
-      if (data.lastError) {
-        showError(data.lastError);
-      }
+      if (data.lastError) showError(data.lastError);
       if (data.logs && data.logs.length) {
-        const stickBottom = els.logBox.scrollTop + els.logBox.clientHeight >= els.logBox.scrollHeight - 24;
-        els.logBox.textContent += data.logs.join("\n") + "\n";
+        state.rawLogs.push(...data.logs);
+        if (state.rawLogs.length > 1500) state.rawLogs = state.rawLogs.slice(-1200);
         state.logOffset += data.logs.length;
-        if (stickBottom) els.logBox.scrollTop = els.logBox.scrollHeight;
+        renderLogOutput();
       }
     }
+
+    function renderLogOutput() {
+      const q = (els.logFilterInput.value || "").trim().toLowerCase();
+      const lines = q ? state.rawLogs.filter(l => l.toLowerCase().includes(q)) : state.rawLogs;
+      const stickBottom = els.logBox.scrollTop + els.logBox.clientHeight >= els.logBox.scrollHeight - 24;
+      els.logBox.textContent = lines.join("\n") + (lines.length ? "\n" : "");
+      if (stickBottom) els.logBox.scrollTop = els.logBox.scrollHeight;
+    }
+
+    els.logFilterInput.addEventListener("input", renderLogOutput);
+
+    // Storage Metrics & Frame Anomaly Detection
+    async function loadFilmMetrics(filmId) {
+      if (!filmId) return;
+      try {
+        const m = await api(`/api/metrics?film=${encodeURIComponent(filmId)}`);
+        els.metFramesMb.textContent = `${m.framesMb} MB (${m.renderedCount})`;
+        els.metMedianKb.textContent = `${m.medianFrameKb} KB (${m.minFrameKb}..${m.maxFrameKb})`;
+        els.metTestMb.textContent = `${m.testMb} MB`;
+        els.metWorkerDirs.textContent = `${m.workerDirs} dirs (${m.workerMb} MB)`;
+
+        els.anomalyStrip.innerHTML = "";
+        if (m.anomalyCount > 0) {
+          const msg = document.createElement("span");
+          msg.style.color = "var(--warning)";
+          msg.textContent = `${m.anomalyCount} tiny/blank frame candidate(s): `;
+          els.anomalyStrip.appendChild(msg);
+          for (const f of m.anomalies.slice(0, 12)) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "bookmark-chip";
+            btn.style.marginRight = "4px";
+            btn.textContent = `f_${String(f).padStart(5, "0")}`;
+            btn.addEventListener("click", () => {
+              const i = state.renderedFrames.indexOf(f);
+              if (i >= 0) {
+                setPreviewSource("final");
+                jumpToIndex(i);
+              }
+            });
+            els.anomalyStrip.appendChild(btn);
+          }
+        } else {
+          els.anomalyStrip.textContent = m.renderedCount > 0
+            ? `Integrity PASS: all ${m.renderedCount} frames within healthy PNG size range.`
+            : "No rendered frames on disk yet.";
+        }
+      } catch (_) {}
+    }
+
+    els.btnRefreshMetrics.addEventListener("click", async () => {
+      await loadFilmMetrics(state.selectedFilm);
+      showToast("Storage scan refreshed");
+    });
+
+    function setupCleanBtn(btn, target, title, desc) {
+      btn.addEventListener("click", () => {
+        if (!state.selectedFilm) return;
+        openConfirm(title, desc, "Clean Now", async () => {
+          try {
+            const res = await api("/api/clean", { film: state.selectedFilm, target });
+            showToast(`Cleaned (${res.freedMb} MB freed)`);
+            await loadFilmMetrics(state.selectedFilm);
+            await poll();
+          } catch (e) {
+            showToast(e.message, "err");
+          }
+        });
+      });
+    }
+
+    setupCleanBtn(
+      els.btnCleanTest,
+      "test",
+      "Clean Test GPU Frames",
+      "Remove temporary test_gpu/ sample frames for this film? Final rendered frames remain untouched."
+    );
+    setupCleanBtn(
+      els.btnCleanWorkers,
+      "workers",
+      "Clean Worker Temp Directories",
+      "Remove temporary _w* render folders inside final_v1/?"
+    );
+
+    // Storyboard Contact Sheet Renderer
+    function renderStoryboardSheet() {
+      const frames = state.renderedFrames || [];
+      const interval = Math.max(1, Number(els.sbIntervalSelect.value) || 30);
+      state.lastStoryboardKey = `${state.selectedFilm}:${frames.length}:${state.lastMtime}:${interval}`;
+
+      els.sbFilmTitle.textContent = state.currentTitle ? `${state.currentTitle} (Contact Sheet)` : "Contact Sheet";
+      els.storyboardGrid.innerHTML = "";
+
+      if (!frames.length) {
+        els.storyboardEmpty.hidden = false;
+        els.sbSummary.textContent = "0 frames";
+        return;
+      }
+
+      els.storyboardEmpty.hidden = true;
+      const sampled = [];
+      for (const f of frames) {
+        if (interval === 1) {
+          sampled.push(f);
+          if (sampled.length >= 120) break;
+        } else if (f % interval === 0 || f === frames[0] || f === frames[frames.length - 1]) {
+          sampled.push(f);
+        }
+      }
+
+      els.sbSummary.textContent = `Showing ${sampled.length} frames from ${frames.length} rendered`;
+
+      for (const f of sampled) {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "contact-tile";
+        tile.title = `Jump Light-Table to frame ${f}`;
+        tile.innerHTML = `
+          <div class="contact-tile-thumb">
+            <img loading="lazy" src="/api/preview?film=${encodeURIComponent(state.selectedFilm)}&frame=${f}&source=final&t=${state.lastMtime}" alt="Frame ${f}">
+          </div>
+          <div class="contact-tile-meta">
+            <span>f_${String(f).padStart(5, "0")}</span>
+            <span>${formatTimecode(f)}</span>
+          </div>
+        `;
+        tile.addEventListener("click", () => {
+          const idx = frames.indexOf(f);
+          switchView("studio");
+          setPreviewSource("final");
+          if (idx >= 0) jumpToIndex(idx);
+          showToast(`Jumped to f_${String(f).padStart(5, "0")}`);
+        });
+        els.storyboardGrid.appendChild(tile);
+      }
+    }
+
+    els.sbIntervalSelect.addEventListener("change", renderStoryboardSheet);
+    els.btnSbRefresh.addEventListener("click", () => {
+      state.lastStoryboardKey = "";
+      renderStoryboardSheet();
+    });
+
+    els.btnExportContactSheet.addEventListener("click", async () => {
+      const frames = state.renderedFrames || [];
+      const interval = Math.max(1, Number(els.sbIntervalSelect.value) || 30);
+      if (!frames.length) {
+        showToast("No rendered frames to export", "err");
+        return;
+      }
+      const sampled = [];
+      for (const f of frames) {
+        if (interval === 1) {
+          sampled.push(f);
+          if (sampled.length >= 60) break;
+        } else if (f % interval === 0 || f === frames[0] || f === frames[frames.length - 1]) {
+          sampled.push(f);
+        }
+      }
+
+      showToast(`Building contact sheet (${sampled.length} frames)...`);
+      const cols = 4;
+      const cellW = 270;
+      const cellH = 480;
+      const labelH = 34;
+      const pad = 16;
+      const headerH = 56;
+      const rows = Math.ceil(sampled.length / cols);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = cols * cellW + (cols + 1) * pad;
+      canvas.height = headerH + rows * (cellH + labelH) + (rows + 1) * pad;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#161412";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#f5f0e6";
+      ctx.font = "bold 22px Segoe UI, sans-serif";
+      ctx.fillText(`${state.currentTitle || "Skies Film"} (${sampled.length} cels, interval ${interval}f)`, pad, 38);
+
+      const imgs = await Promise.all(sampled.map(f => new Promise(resolve => {
+        const im = new Image();
+        im.onload = () => resolve({ f, im });
+        im.onerror = () => resolve({ f, im: null });
+        im.src = `/api/preview?film=${encodeURIComponent(state.selectedFilm)}&frame=${f}&source=final&t=${state.lastMtime}`;
+      })));
+
+      imgs.forEach((item, i) => {
+        const r = Math.floor(i / cols);
+        const c = i % cols;
+        const x = pad + c * (cellW + pad);
+        const y = headerH + pad + r * (cellH + labelH + pad);
+
+        ctx.fillStyle = "#1f1c19";
+        ctx.fillRect(x, y, cellW, cellH + labelH);
+        if (item.im) ctx.drawImage(item.im, x, y, cellW, cellH);
+
+        ctx.fillStyle = "#b8afa3";
+        ctx.font = "600 13px Consolas, monospace";
+        ctx.fillText(`f_${String(item.f).padStart(5, "0")}`, x + 8, y + cellH + 22);
+        const tc = formatTimecode(item.f);
+        ctx.fillText(tc, x + cellW - 72, y + cellH + 22);
+      });
+
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `${(state.currentTitle || "contact-sheet").replace(/[^a-zA-Z0-9_-]/g, "_")}_sheet.png`;
+      a.click();
+      showToast("Contact sheet PNG downloaded");
+    });
+
+    // Video Library & History
+    async function loadLibraryData() {
+      try {
+        const data = await api("/api/library");
+        state.libraryVideos = data.videos || [];
+        state.libraryHistory = data.history || [];
+        renderLibrary();
+      } catch (e) {
+        console.error("Library fetch error:", e);
+      }
+    }
+
+    function renderLibrary() {
+      const allVideos = state.libraryVideos || [];
+      const allHistory = state.libraryHistory || [];
+
+      els.libraryBadge.textContent = String(allVideos.length);
+      els.libLedgerCount.textContent = `${allVideos.length} ${allVideos.length === 1 ? "MP4" : "MP4s"}`;
+
+      const totalDur = allVideos.reduce((acc, v) => acc + (v.durationSeconds || 0), 0);
+      els.libLedgerDur.textContent = `${totalDur.toFixed(1)}s`;
+
+      const totalMb = allVideos.reduce((acc, v) => acc + (v.sizeMb || 0), 0);
+      els.libLedgerDisk.textContent = `${totalMb.toFixed(1)} MB`;
+
+      const okCount = allHistory.filter(h => h.status === "Completed").length;
+      els.libLedgerRuns.textContent = `${okCount} completed`;
+
+      const query = (els.librarySearch.value || "").trim().toLowerCase();
+      const sortMode = els.librarySort.value;
+
+      let videos = allVideos.filter(v =>
+        !query ||
+        (v.filmTitle || "").toLowerCase().includes(query) ||
+        (v.filename || "").toLowerCase().includes(query)
+      );
+
+      videos = [...videos].sort((a, b) => {
+        if (sortMode === "oldest") return (a.mtime || 0) - (b.mtime || 0);
+        if (sortMode === "largest") return (b.sizeBytes || 0) - (a.sizeBytes || 0);
+        if (sortMode === "longest") return (b.durationSeconds || 0) - (a.durationSeconds || 0);
+        if (sortMode === "alpha") return (a.filmTitle || "").localeCompare(b.filmTitle || "");
+        return (b.mtime || 0) - (a.mtime || 0);
+      });
+
+      els.videoGrid.innerHTML = "";
+      if (videos.length === 0) {
+        els.videoGridEmpty.hidden = false;
+      } else {
+        els.videoGridEmpty.hidden = true;
+        for (const v of videos) {
+          const card = document.createElement("div");
+          card.className = "video-card";
+          card.innerHTML = `
+            <div class="video-card-thumb" role="button" tabindex="0" title="Watch in Theater Player">
+              <img loading="lazy" src="${v.posterUrl}" alt="${v.filmTitle}">
+              <span class="video-duration-pill">${v.durationSeconds}s</span>
+            </div>
+            <div class="video-card-body">
+              <h4 class="video-card-title">${v.filmTitle}</h4>
+              <div class="video-card-filename" title="${v.filename}">${v.filename}</div>
+              <div class="video-meta-line tabular">1080x1920 at 30fps, ${v.sizeMb} MB, ${v.mtimeFormatted}</div>
+              <div class="video-card-actions">
+                <button class="btn-primary btn-sm btn-play-card" type="button">Watch</button>
+                <button class="btn-ghost btn-sm btn-reveal-card" type="button">Folder</button>
+                <button class="btn-ghost btn-sm btn-copy-card" type="button">Copy Path</button>
+                <button class="btn-ghost btn-sm btn-danger-ghost btn-del-card" type="button">Delete</button>
+              </div>
+            </div>
+          `;
+
+          const playAction = () => openTheaterModal(v);
+          const thumb = card.querySelector(".video-card-thumb");
+          thumb.addEventListener("click", playAction);
+          thumb.addEventListener("keydown", e => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playAction(); }
+          });
+          card.querySelector(".btn-play-card").addEventListener("click", playAction);
+
+          card.querySelector(".btn-reveal-card").addEventListener("click", async () => {
+            try { await api("/api/reveal-file", { path: v.filePath }); } catch (e) { showError(e.message); }
+          });
+
+          card.querySelector(".btn-copy-card").addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(v.filePath);
+              showToast("Video path copied");
+            } catch (_) {
+              showToast("Clipboard copy failed", "err");
+            }
+          });
+
+          card.querySelector(".btn-del-card").addEventListener("click", () => {
+            openConfirm(
+              "Delete MP4 Video",
+              `Delete "${v.filename}" (${v.sizeMb} MB) from disk? Rendered PNG frames remain untouched.`,
+              "Delete MP4",
+              async () => {
+                try {
+                  await api("/api/video/delete", { path: v.filePath });
+                  showToast("Video deleted");
+                  await loadLibraryData();
+                  await poll();
+                } catch (e) {
+                  showToast(e.message, "err");
+                }
+              }
+            );
+          });
+
+          els.videoGrid.appendChild(card);
+        }
+      }
+
+      const hFilter = els.historyFilter.value;
+      const filteredHistory = allHistory.filter(h => hFilter === "all" || h.status === hFilter);
+
+      els.historyTableBody.innerHTML = "";
+      if (filteredHistory.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="8" style="text-align: center; color: var(--ink-muted); padding: 24px;">No encode history records matching this filter.</td>`;
+        els.historyTableBody.appendChild(tr);
+      } else {
+        for (const h of filteredHistory) {
+          const tr = document.createElement("tr");
+          const statusClass = h.status === "Completed" ? "success" : "failed";
+          tr.innerHTML = `
+            <td>${h.date || "Recent"}</td>
+            <td><strong>${h.filmTitle || h.filmName}</strong></td>
+            <td class="mono" style="font-size: 12px;">${h.filename}</td>
+            <td><span class="encoder-pill">${h.encoder || "libx264"}</span></td>
+            <td>${h.totalFrames ? h.totalFrames.toLocaleString() : "-"}</td>
+            <td>${h.duration || "-"}</td>
+            <td>${h.sizeMb || "-"}</td>
+            <td><span class="status-pill ${statusClass}">${h.status}</span></td>
+          `;
+          els.historyTableBody.appendChild(tr);
+        }
+      }
+    }
+
+    els.librarySearch.addEventListener("input", renderLibrary);
+    els.librarySort.addEventListener("change", renderLibrary);
+    els.historyFilter.addEventListener("change", renderLibrary);
+    els.btnRefreshLibrary.addEventListener("click", async () => {
+      await loadLibraryData();
+      showToast("Video library refreshed");
+    });
+
+    els.btnExportCsv.addEventListener("click", () => {
+      const rows = [["Date", "Film", "Output File", "Encoder", "Frames", "Duration", "Size", "Status"]];
+      for (const h of state.libraryHistory || []) {
+        rows.push([
+          `"${(h.date || "").replace(/"/g, '""')}"`,
+          `"${(h.filmTitle || h.filmName || "").replace(/"/g, '""')}"`,
+          `"${(h.filename || "").replace(/"/g, '""')}"`,
+          h.encoder || "",
+          h.totalFrames || "",
+          h.duration || "",
+          h.sizeMb || "",
+          h.status || "",
+        ]);
+      }
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `skies-encode-history-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast("History exported to CSV");
+    });
+
+    els.btnClearHistory.addEventListener("click", () => {
+      openConfirm(
+        "Clear Encode History",
+        "Remove all chronological encode logs? Generated MP4 files on disk will not be deleted.",
+        "Clear History",
+        async () => {
+          try {
+            await api("/api/history/clear", {});
+            await loadLibraryData();
+            showToast("Encode history cleared");
+          } catch (e) {
+            showToast(e.message, "err");
+          }
+        }
+      );
+    });
+
+    // Theater Video Modal
+    function updateTheaterHud() {
+      const t = els.theaterVideo.currentTime || 0;
+      const frame = Math.round(t * 30);
+      const total = state.activeVideoItem?.totalFrames || state.totalFrames || 0;
+      els.theaterFrameHud.textContent = `f_${String(frame).padStart(5, "0")}${total ? " / " + total : ""} (${formatTimecode(frame)})`;
+      if (state.abLoop.a !== null && state.abLoop.b !== null) {
+        els.theaterLoopHud.textContent = `A-B Loop: ${state.abLoop.a.toFixed(2)}s to ${state.abLoop.b.toFixed(2)}s`;
+        els.theaterClearAB.hidden = false;
+      } else if (state.abLoop.a !== null) {
+        els.theaterLoopHud.textContent = `Loop A: ${state.abLoop.a.toFixed(2)}s (set B)`;
+        els.theaterClearAB.hidden = false;
+      } else {
+        els.theaterLoopHud.textContent = "A-B Loop: Off";
+        els.theaterClearAB.hidden = true;
+      }
+    }
+
+    function openTheaterModal(videoItem) {
+      stopFlipbook();
+      state.activeVideoItem = videoItem;
+      state.abLoop = { a: null, b: null };
+      els.theaterTitle.textContent = `${videoItem.filmTitle} (${videoItem.filename})`;
+      els.theaterVideo.src = videoItem.videoUrl;
+      els.theaterSpeed.value = "1";
+      els.theaterVideo.playbackRate = 1.0;
+      updateTheaterHud();
+      els.theaterModal.hidden = false;
+      els.theaterVideo.play().catch(() => {});
+    }
+
+    function closeTheaterModal() {
+      els.theaterVideo.pause();
+      els.theaterVideo.removeAttribute("src");
+      els.theaterModal.hidden = true;
+      state.activeVideoItem = null;
+      state.abLoop = { a: null, b: null };
+    }
+
+    els.theaterVideo.addEventListener("timeupdate", () => {
+      if (state.abLoop.a !== null && state.abLoop.b !== null && els.theaterVideo.currentTime >= state.abLoop.b) {
+        els.theaterVideo.currentTime = state.abLoop.a;
+      }
+      updateTheaterHud();
+    });
+
+    els.theaterSetA.addEventListener("click", () => {
+      state.abLoop.a = els.theaterVideo.currentTime || 0;
+      if (state.abLoop.b !== null && state.abLoop.b <= state.abLoop.a) state.abLoop.b = null;
+      updateTheaterHud();
+      showToast(`Loop start A set at ${state.abLoop.a.toFixed(2)}s`);
+    });
+
+    els.theaterSetB.addEventListener("click", () => {
+      const t = els.theaterVideo.currentTime || 0;
+      if (state.abLoop.a === null) state.abLoop.a = 0;
+      state.abLoop.b = Math.max(state.abLoop.a + 0.1, t);
+      els.theaterVideo.currentTime = state.abLoop.a;
+      updateTheaterHud();
+      showToast(`Looping ${state.abLoop.a.toFixed(2)}s to ${state.abLoop.b.toFixed(2)}s`);
+    });
+
+    els.theaterClearAB.addEventListener("click", () => {
+      state.abLoop = { a: null, b: null };
+      updateTheaterHud();
+      showToast("A-B loop cleared");
+    });
+
+    els.theaterClose.addEventListener("click", closeTheaterModal);
+    els.theaterModal.addEventListener("click", e => { if (e.target === els.theaterModal) closeTheaterModal(); });
+
+    els.theaterStepBack.addEventListener("click", () => {
+      els.theaterVideo.pause();
+      els.theaterVideo.currentTime = Math.max(0, els.theaterVideo.currentTime - (1 / 30));
+      updateTheaterHud();
+    });
+
+    els.theaterStepFwd.addEventListener("click", () => {
+      els.theaterVideo.pause();
+      els.theaterVideo.currentTime = Math.min(els.theaterVideo.duration || 999, els.theaterVideo.currentTime + (1 / 30));
+      updateTheaterHud();
+    });
+
+    els.theaterSpeed.addEventListener("change", () => {
+      els.theaterVideo.playbackRate = Number(els.theaterSpeed.value) || 1.0;
+    });
+
+    els.theaterFullscreen.addEventListener("click", () => {
+      if (els.theaterVideo.requestFullscreen) els.theaterVideo.requestFullscreen();
+    });
+
+    els.theaterCopyPath.addEventListener("click", async () => {
+      if (!state.activeVideoItem) return;
+      try {
+        await navigator.clipboard.writeText(state.activeVideoItem.filePath);
+        showToast("Video path copied");
+      } catch (_) {}
+    });
+
+    els.theaterReveal.addEventListener("click", async () => {
+      if (state.activeVideoItem) {
+        try { await api("/api/reveal-file", { path: state.activeVideoItem.filePath }); } catch (e) { showError(e.message); }
+      }
+    });
+
+    els.theaterSystem.addEventListener("click", async () => {
+      if (state.activeVideoItem) {
+        try { await api("/api/open-file", { path: state.activeVideoItem.filePath }); } catch (e) { showError(e.message); }
+      }
+    });
 
     async function poll() {
       try {
         const data = await api(`/api/state?film=${encodeURIComponent(state.selectedFilm)}&logOffset=${state.logOffset}`);
         renderUI(data);
-      } catch (_err) {
-        // Server shutting down or temporarily busy
-      }
+      } catch (_err) {}
     }
+
+    els.tabFinal.addEventListener("click", () => setPreviewSource("final"));
+    els.tabTest.addEventListener("click", () => setPreviewSource("test"));
+
+    function jumpToIndex(idx) {
+      stopFlipbook();
+      els.followCheck.checked = false;
+      const list = state.previewSource === "test" ? state.testFrames : state.renderedFrames;
+      if (!list || !list.length) return;
+      const clamped = Math.max(0, Math.min(list.length - 1, idx));
+      state.activeFrame = list[clamped];
+      els.scrubberSlider.value = String(clamped);
+      els.frameJumpInput.value = String(state.activeFrame);
+      updateScrubberRange();
+      updatePreviewImage();
+      drawRenderMap();
+    }
+
+    els.scrubberSlider.addEventListener("input", e => jumpToIndex(Number(e.target.value)));
+    els.btnFirst.addEventListener("click", () => jumpToIndex(0));
+    els.btnBack10.addEventListener("click", () => jumpToIndex(Number(els.scrubberSlider.value) - 10));
+    els.btnPrev.addEventListener("click", () => jumpToIndex(Number(els.scrubberSlider.value) - 1));
+    els.btnNext.addEventListener("click", () => jumpToIndex(Number(els.scrubberSlider.value) + 1));
+    els.btnFwd10.addEventListener("click", () => jumpToIndex(Number(els.scrubberSlider.value) + 10));
+    els.btnLast.addEventListener("click", () => jumpToIndex(Number(els.scrubberSlider.max)));
+
+    els.frameJumpInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const target = Number(els.frameJumpInput.value);
+        const list = state.previewSource === "test" ? state.testFrames : state.renderedFrames;
+        if (!list || !list.length) return;
+        let idx = list.indexOf(target);
+        if (idx < 0) idx = list.reduce((best, val, i) => Math.abs(val - target) < Math.abs(list[best] - target) ? i : best, 0);
+        jumpToIndex(idx);
+        els.frameJumpInput.blur();
+      }
+    });
+
+    els.btnSaveFrame.addEventListener("click", () => {
+      if (state.activeFrame === null || !state.selectedFilm) return;
+      const a = document.createElement("a");
+      a.href = `/api/preview?film=${encodeURIComponent(state.selectedFilm)}&frame=${state.activeFrame}&source=${state.previewSource}`;
+      a.download = `f_${String(state.activeFrame).padStart(5, "0")}.png`;
+      a.click();
+      showToast(`Saved frame f_${String(state.activeFrame).padStart(5, "0")}`);
+    });
+
+    els.btnCopyFrame.addEventListener("click", async () => {
+      if (!els.previewImg.src || state.activeFrame === null) return;
+      try {
+        const res = await fetch(els.previewImg.src);
+        const blob = await res.blob();
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        showToast(`Copied frame f_${String(state.activeFrame).padStart(5, "0")}`);
+      } catch (_) {
+        showToast("Clipboard PNG copy blocked by browser permissions", "err");
+      }
+    });
+
+    // Quick Presets
+    els.presetFast.addEventListener("click", () => {
+      els.widthSelect.value = "540";
+      els.msSelect.value = "1";
+      els.smSelect.value = "1024";
+      showToast("Preset: Draft Check (540px, 1x MSAA)");
+    });
+    els.presetStudio.addEventListener("click", () => {
+      els.widthSelect.value = "540";
+      els.msSelect.value = "2";
+      els.smSelect.value = "2048";
+      showToast("Preset: Balanced Studio (540px, 2x MSAA)");
+    });
+    els.presetMaster.addEventListener("click", () => {
+      els.widthSelect.value = "1080";
+      els.msSelect.value = "4";
+      els.smSelect.value = "4096";
+      showToast("Preset: 1080p Master (1080px, 4x MSAA)");
+    });
+
+    // Lightbox modal inspect + 1:1 pixel zoom
+    els.previewImg.addEventListener("click", () => {
+      if (els.previewImg.src && els.previewImg.style.display !== "none") {
+        els.modalImg.src = els.previewImg.src;
+        els.modalImg.classList.remove("zoomed-100");
+        els.modalZoomToggle.textContent = "1:1 Original Size";
+        els.modalCaption.textContent = `f_${String(state.activeFrame).padStart(5, "0")} (${state.previewSource})`;
+        els.modalBackdrop.hidden = false;
+      }
+    });
+
+    els.modalZoomToggle.addEventListener("click", () => {
+      const z = els.modalImg.classList.toggle("zoomed-100");
+      els.modalZoomToggle.textContent = z ? "Fit to Window" : "1:1 Original Size";
+    });
+    els.modalImg.addEventListener("click", () => els.modalZoomToggle.click());
+
+    els.modalClose.addEventListener("click", () => { els.modalBackdrop.hidden = true; });
+    els.modalBackdrop.addEventListener("click", e => { if (e.target === els.modalBackdrop) els.modalBackdrop.hidden = true; });
+
+    els.shortcutsBtn.addEventListener("click", () => { els.shortcutsModal.hidden = false; });
+    els.shortcutsClose.addEventListener("click", () => { els.shortcutsModal.hidden = true; });
+    els.shortcutsModal.addEventListener("click", e => { if (e.target === els.shortcutsModal) els.shortcutsModal.hidden = true; });
+
+    // Zip Archive Import and Drag-and-Drop Workflow
+    const pendingImport = {
+      type: null,
+      file: null,
+      path: null,
+      mode: "gpu",
+    };
+
+    function openImportModalWithFile(file) {
+      if (!file || !file.name.toLowerCase().endsWith(".zip")) {
+        showToast("Selected file must be a .zip archive", "err");
+        return;
+      }
+      pendingImport.type = "file";
+      pendingImport.file = file;
+      pendingImport.path = null;
+      pendingImport.mode = state.mode || "gpu";
+
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      els.importFileName.textContent = `${file.name} (${sizeMb} MB)`;
+      els.importModeGpu.setAttribute("aria-pressed", pendingImport.mode === "gpu");
+      els.importModeCpu.setAttribute("aria-pressed", pendingImport.mode === "cpu");
+      els.importProgressWrap.hidden = true;
+      els.btnExecuteImport.disabled = false;
+      els.btnExecuteImport.textContent = els.importAutoRender.checked ? "Unpack & Render" : "Unpack Only";
+      els.importModal.hidden = false;
+    }
+
+    function openImportModalWithPath(filePath) {
+      if (!filePath) return;
+      pendingImport.type = "path";
+      pendingImport.path = filePath;
+      pendingImport.file = null;
+      pendingImport.mode = state.mode || "gpu";
+
+      const norm = filePath.replace(/\\/g, "/");
+      const name = norm.split("/").pop() || filePath;
+      els.importFileName.textContent = `${name} (${filePath})`;
+      els.importModeGpu.setAttribute("aria-pressed", pendingImport.mode === "gpu");
+      els.importModeCpu.setAttribute("aria-pressed", pendingImport.mode === "cpu");
+      els.importProgressWrap.hidden = true;
+      els.btnExecuteImport.disabled = false;
+      els.btnExecuteImport.textContent = els.importAutoRender.checked ? "Unpack & Render" : "Unpack Only";
+      els.importModal.hidden = false;
+    }
+
+    els.btnImportZip.addEventListener("click", () => {
+      els.zipFileInput.value = "";
+      els.zipFileInput.click();
+    });
+
+    els.zipFileInput.addEventListener("change", () => {
+      if (els.zipFileInput.files && els.zipFileInput.files.length > 0) {
+        openImportModalWithFile(els.zipFileInput.files[0]);
+      }
+    });
+
+    els.importAutoRender.addEventListener("change", () => {
+      const isAuto = els.importAutoRender.checked;
+      els.importSuboptions.style.opacity = isAuto ? "1" : "0.5";
+      els.importSuboptions.style.pointerEvents = isAuto ? "auto" : "none";
+      els.btnExecuteImport.textContent = isAuto ? "Unpack & Render" : "Unpack Only";
+    });
+
+    els.importModeGpu.addEventListener("click", () => {
+      pendingImport.mode = "gpu";
+      els.importModeGpu.setAttribute("aria-pressed", "true");
+      els.importModeCpu.setAttribute("aria-pressed", "false");
+    });
+
+    els.importModeCpu.addEventListener("click", () => {
+      pendingImport.mode = "cpu";
+      els.importModeGpu.setAttribute("aria-pressed", "false");
+      els.importModeCpu.setAttribute("aria-pressed", "true");
+    });
+
+    els.importClose.addEventListener("click", () => { els.importModal.hidden = true; });
+    els.btnCancelImport.addEventListener("click", () => { els.importModal.hidden = true; });
+    els.importModal.addEventListener("click", e => { if (e.target === els.importModal) els.importModal.hidden = true; });
+
+    els.btnBrowseLocalZip.addEventListener("click", async () => {
+      try {
+        const res = await api("/api/film/browse-zip", {});
+        if (res.selected) {
+          openImportModalWithPath(res.selected);
+        }
+      } catch (err) {
+        showToast("Browse failed: " + err.message, "err");
+      }
+    });
+
+    els.btnExecuteImport.addEventListener("click", async () => {
+      if (!pendingImport.file && !pendingImport.path) {
+        showToast("No archive selected for import", "err");
+        return;
+      }
+
+      const autoRender = els.importAutoRender.checked;
+      const autoEncode = els.importAutoEncode.checked;
+      const mode = pendingImport.mode || "gpu";
+      const procs = parseInt(els.importProcs.value, 10) || 4;
+
+      els.importProgressWrap.hidden = false;
+      els.importProgressBar.style.width = "0%";
+      els.importProgressText.textContent = "Uploading and unpacking archive...";
+      els.btnExecuteImport.disabled = true;
+
+      try {
+        let result;
+        if (pendingImport.type === "file") {
+          result = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const url = `/api/film/upload-zip?autoRender=${autoRender}&mode=${mode}&procs=${procs}&autoEncode=${autoEncode}`;
+            xhr.open("POST", url, true);
+            xhr.upload.onprogress = (evt) => {
+              if (evt.lengthComputable) {
+                const pct = Math.round((evt.loaded / evt.total) * 100);
+                els.importProgressBar.style.width = `${pct}%`;
+                els.importProgressText.textContent = `Uploading archive (${pct}%)...`;
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  resolve(JSON.parse(xhr.responseText));
+                } catch (_) {
+                  reject(new Error("Invalid server response"));
+                }
+              } else {
+                try {
+                  const err = JSON.parse(xhr.responseText);
+                  reject(new Error(err.error || `HTTP ${xhr.status}`));
+                } catch (_) {
+                  reject(new Error(`HTTP ${xhr.status}`));
+                }
+              }
+            };
+            xhr.onerror = () => reject(new Error("Network connection error"));
+            xhr.send(pendingImport.file);
+          });
+        } else {
+          els.importProgressBar.style.width = "50%";
+          els.importProgressText.textContent = "Unpacking local archive and verifying assets...";
+          result = await api("/api/film/import-zip", {
+            path: pendingImport.path,
+            autoRender,
+            mode,
+            procs,
+            autoEncode,
+          });
+        }
+
+        els.importProgressBar.style.width = "100%";
+        els.importProgressText.textContent = "Unpack and validation complete!";
+        els.importModal.hidden = true;
+
+        const filmTitle = result.title || result.slug;
+        const msg = autoRender
+          ? `Imported "${filmTitle}" (${result.totalFrames} frames). Render active!`
+          : `Imported "${filmTitle}" (${result.totalFrames} frames) into films/${result.slug}`;
+        showToast(msg);
+
+        // Switch to Studio view and force immediate state refresh
+        switchView("studio");
+        state.selectedFilm = result.film;
+        state.activeFrame = null;
+        state.lastValidationKey = "";
+        await poll();
+        loadFilmValidation();
+      } catch (err) {
+        els.importProgressText.textContent = "Import error: " + err.message;
+        els.btnExecuteImport.disabled = false;
+        showToast("Import failed: " + err.message, "err");
+      }
+    });
+
+    // Global Drag and Drop listeners
+    let dragCounter = 0;
+    window.addEventListener("dragenter", (e) => {
+      if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+        dragCounter++;
+        els.dragDropOverlay.hidden = false;
+      }
+    });
+
+    window.addEventListener("dragleave", () => {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        els.dragDropOverlay.hidden = true;
+      }
+    });
+
+    window.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "copy";
+      }
+    });
+
+    window.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      els.dragDropOverlay.hidden = true;
+      const files = e.dataTransfer ? e.dataTransfer.files : null;
+      if (files && files.length > 0) {
+        const file = files[0];
+        if (file.name.toLowerCase().endsWith(".zip")) {
+          openImportModalWithFile(file);
+        } else {
+          showToast("Dropped file must be a .zip archive", "err");
+        }
+      }
+    });
+
+    window.addEventListener("keydown", e => {
+      const tag = document.activeElement?.tagName;
+      const inInput = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+
+      if (e.key === "Escape") {
+        if (!els.theaterModal.hidden) closeTheaterModal();
+        if (!els.modalBackdrop.hidden) els.modalBackdrop.hidden = true;
+        if (!els.diagModal.hidden) els.diagModal.hidden = true;
+        if (!els.shortcutsModal.hidden) els.shortcutsModal.hidden = true;
+        if (!els.confirmModal.hidden) closeConfirm();
+        return;
+      }
+
+      if (inInput) return;
+
+      if (e.key === "?") {
+        e.preventDefault();
+        els.shortcutsModal.hidden = !els.shortcutsModal.hidden;
+        return;
+      }
+
+      if (!els.theaterModal.hidden) {
+        if (e.key === " ") {
+          e.preventDefault();
+          if (els.theaterVideo.paused) els.theaterVideo.play();
+          else els.theaterVideo.pause();
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          els.theaterStepBack.click();
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          els.theaterStepFwd.click();
+        } else if (e.key.toLowerCase() === "i") {
+          e.preventDefault();
+          els.theaterSetA.click();
+        } else if (e.key.toLowerCase() === "o") {
+          e.preventDefault();
+          els.theaterSetB.click();
+        } else if (e.key.toLowerCase() === "f") {
+          e.preventDefault();
+          els.theaterFullscreen.click();
+        }
+        return;
+      }
+
+      if (e.key === "1") switchView("studio");
+      else if (e.key === "2") switchView("storyboard");
+      else if (e.key === "3") switchView("library");
+      else if (state.activeView === "studio") {
+        if (e.key === " ") { e.preventDefault(); els.btnFlipbook.click(); }
+        else if (e.key.toLowerCase() === "m") { e.preventDefault(); toggleBookmarkActiveFrame(); }
+        else if (e.key === "ArrowLeft") { e.preventDefault(); els.btnPrev.click(); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); els.btnNext.click(); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); els.btnBack10.click(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); els.btnFwd10.click(); }
+        else if (e.key === "Home") { e.preventDefault(); els.btnFirst.click(); }
+        else if (e.key === "End") { e.preventDefault(); els.btnLast.click(); }
+      }
+    });
 
     els.filmSelect.addEventListener("change", async () => {
       showError("");
+      stopFlipbook();
       state.selectedFilm = els.filmSelect.value;
+      state.activeFrame = null;
+      state.lastValidationKey = "";
+      state.lastStoryboardKey = "";
+      state.loadedMetricsFilm = "";
       await poll();
     });
 
@@ -940,6 +4472,8 @@
         const res = await api("/api/browse", {});
         if (res.selected) {
           state.selectedFilm = res.selected;
+          state.activeFrame = null;
+          state.lastValidationKey = "";
           await poll();
         }
       } catch (e) {
@@ -948,22 +4482,10 @@
     });
 
     els.btnOpenFolder.addEventListener("click", async () => {
-      try {
-        await api("/api/open-folder", { film: state.selectedFilm });
-      } catch (e) {
-        showError(e.message);
-      }
+      try { await api("/api/open-folder", { film: state.selectedFilm }); } catch (e) { showError(e.message); }
     });
 
-    els.btnOpenMp4.addEventListener("click", async () => {
-      try {
-        await api("/api/open-mp4", { film: state.selectedFilm });
-      } catch (e) {
-        showError(e.message);
-      }
-    });
-
-    els.btnStart.addEventListener("click", async () => {
+    async function triggerRenderMissing() {
       showError("");
       try {
         await api("/api/render/start", {
@@ -973,7 +4495,38 @@
           w: Number(els.widthSelect.value),
           ms: Number(els.msSelect.value),
           sm: Number(els.smSelect.value),
+          onlyMissing: true,
         });
+        setPreviewSource("final");
+        els.followCheck.checked = true;
+        await poll();
+      } catch (e) {
+        showError(e.message);
+      }
+    }
+
+    els.btnRenderMissing.addEventListener("click", triggerRenderMissing);
+    els.btnMissingBannerAction.addEventListener("click", triggerRenderMissing);
+
+    els.btnStart.addEventListener("click", async () => {
+      showError("");
+      const q = Number(els.crfSelect.value) || 17;
+      try {
+        await api("/api/render/start", {
+          film: state.selectedFilm,
+          mode: state.mode,
+          procs: Number(els.workersInput.value) || 4,
+          w: Number(els.widthSelect.value),
+          ms: Number(els.msSelect.value),
+          sm: Number(els.smSelect.value),
+          range: els.rangeInput.value.trim() || undefined,
+          autoEncode: els.autoEncodeCheck.checked,
+          nvenc: els.nvencCheck.checked,
+          crf: q,
+          outputName: els.outputNameInput.value.trim() || undefined,
+        });
+        setPreviewSource("final");
+        els.followCheck.checked = true;
         await poll();
       } catch (e) {
         showError(e.message);
@@ -990,6 +4543,7 @@
           ms: Number(els.msSelect.value),
           sm: Number(els.smSelect.value),
         });
+        setPreviewSource("test");
         await poll();
       } catch (e) {
         showError(e.message);
@@ -997,21 +4551,20 @@
     });
 
     els.btnStop.addEventListener("click", async () => {
-      try {
-        await api("/api/render/stop", {});
-        await poll();
-      } catch (e) {
-        showError(e.message);
-      }
+      try { await api("/api/render/stop", {}); await poll(); } catch (e) { showError(e.message); }
     });
 
     els.btnEncode.addEventListener("click", async () => {
       showError("");
       els.logDrawer.open = true;
+      const q = Number(els.crfSelect.value) || 17;
       try {
         await api("/api/encode/start", {
           film: state.selectedFilm,
           nvenc: els.nvencCheck.checked,
+          crf: q,
+          cq: q + 1,
+          outputName: els.outputNameInput.value.trim() || undefined,
         });
         await poll();
       } catch (e) {
@@ -1019,17 +4572,20 @@
       }
     });
 
-    els.btnClearLog.addEventListener("click", () => {
-      els.logBox.textContent = "";
+    els.btnCopyLog.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(els.logBox.textContent);
+        showToast("Console log copied");
+      } catch (_) {}
     });
 
-    els.logDrawer.addEventListener("toggle", () => {
-      if (els.logDrawer.open) {
-        els.logDrawer.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
+    els.btnClearLog.addEventListener("click", () => {
+      state.rawLogs = [];
+      renderLogOutput();
     });
 
     poll();
+    loadLibraryData();
     setInterval(poll, 1000);
   </script>
 </body>

@@ -11,6 +11,15 @@ _w[0-9]*.log
 _w[0-9]*.srv.log
 *.mp4
 
+# Local encode and job history
+history.json
+tools/render/history.json
+
+# User imported films (keep demo knocker-upper tracked)
+films/*
+!films/knocker-upper/
+
 # OS files
 .DS_Store
 Thumbs.db
+

@@ -141,15 +141,26 @@ It will appear automatically in the GUI film selector, or you can pass `<slug>` 
 Double-click **`launch_gui.bat`** (or run `python gui.py` from a terminal).
 
 1. **Select a Film**: Choose a film from the top-left dropdown (auto-discovered from `films/`), or click **Add folder** to select any film folder containing `film.json` and `engine/web/`.
-2. **Choose Render Device**: Toggle **GPU** (hardware WebGL via ANGLE Direct3D 11) or **CPU** (software WebGL via SwiftShader) in the top-right.
-3. **Test First (Optional)**: Expand **Render settings & test** and click **Test 5 frames (GPU)** to render 5 sample frames into `<film>/test_gpu/` and verify your GPU works properly.
-4. **Adjust Workers & Quality (Optional)**:
-   - **Workers**: Auto-recommended based on your CPU cores, RAM, and GPU VRAM. Lower this if you experience high memory usage or crashes. For GPU, 2 workers is a safe start.
-   - **Render settings & test**: Configure render **Width** (`540`, `720`, or `1080` px in 9:16 portrait), **MSAA** (`1x`, `2x`, `4x`), and **Shadow map** (`1024`, `2048`, `4096`).
-5. **Render Frames**: Click **Start Render**.
-   - Shows live latest-frame preview, frame count, FPS, and ETA.
-   - Click **Stop Safely** at any time — completed frames are preserved in `<film>/final_v1/` and skipped automatically when you resume.
-6. **Encode MP4**: Once all frames are rendered, optionally check **Use GPU video encoder (NVENC)** (if supported by your GPU/FFmpeg) and click **Encode MP4**. When finished, click **Open MP4** or **Open folder** to view the output video.
+2. **Pre-flight Health Checks**: Instant diagnostic badges verify `film.json`, WebGL scene bundles, audio track length and alignment, caption list count, and frame completion.
+3. **Choose Render Device & Theme**:
+   - Toggle **GPU** (hardware WebGL via ANGLE Direct3D 11 on Windows / Metal on macOS / Vulkan on Linux) or **CPU** (software WebGL via SwiftShader) in the top-right.
+   - Toggle **Dark / Light mode** (🌙 / ☀️) to suit your workstation lighting.
+4. **Test First (Optional)**:
+   - Click **Render settings & custom range** and click **Test 5 frames (GPU)**.
+   - When finished, switch between **Final Frames** and **Test Frames** tabs to inspect sample frames directly in the UI.
+5. **Adjust Workers & Quality**:
+   - **Workers**: Auto-recommended based on your CPU cores, RAM, and GPU VRAM.
+   - **Render settings**: Configure render **Width** (`540`, `720`, or `1080` px in 9:16 portrait), **MSAA** (`1x`, `2x`, `4x`), **Shadow map** (`1024`, `2048`, `4096`), or enter a **Custom Range** (e.g. `200-350` to re-render a specific shot).
+6. **Render Frames**:
+   - Click **Start Render**.
+   - Watch live frame previews, frame count, FPS, and ETA.
+   - Use the **Frame Scrubber** to inspect any rendered frame, step through frames with `|<`, `<`, `>`, `>|`, or click the preview image to open a full-resolution Lightbox viewer.
+   - If any frame was missed during a crash or interrupt, a **Re-render Missing** button appears automatically to render only the missing frame gaps.
+   - Click **Stop Safely** at any time — completed frames are preserved and rescued automatically.
+7. **Encode MP4 & In-GUI Playback**:
+   - Once all frames are rendered, choose **Use GPU video encoder (NVENC)** (hardware-verified) or CPU (`libx264`). If NVENC encounters a driver mismatch, it automatically falls back to `libx264` CPU encoding.
+   - Click **Encode MP4** to see real-time encoding progress, FPS, and speed.
+   - When finished, click **Watch MP4** to play the finished short directly inside the GUI preview frame with sound, or click **Open MP4** / **Open folder** to launch external apps.
 
 > **Headless / Browser-only GUI mode:** Run `python gui.py --serve-only --port 8080` to serve the web UI without launching a standalone app window.
 
@@ -185,8 +196,16 @@ Double-click **`test_gpu.bat`**.
 - **Direct Python:**
 
   ```
-  python run_loop.py films/human-computers
+  python run_loop.py films/human-computers --mode gpu --procs 4
   ```
+
+  Options for `run_loop.py`:
+  - `--mode gpu|cpu`: Choose hardware or software rendering (default: `gpu`)
+  - `--procs N`: Number of concurrent browser instances (default: safe auto 4 for GPU, 2 for CPU)
+  - `--w 540|720|1080`: Render width (default: `540`)
+  - `--range 0-1128`: Custom frame range to render (default: full film)
+  - `--encode`: Automatically triggers `encode_film.py` once all frames finish
+  - `--nvenc`: Use NVENC GPU encoding when `--encode` is set
 
 `run_loop.py` automatically runs `tools/render/render.py`, rescues completed frames from worker subfolders (`_w0`, `_w1`, ...) into `final_v1/`, and skips already-rendered `f_NNNNN.png` files. You can stop (`Ctrl+C`) and restart at any time without losing progress.
 
@@ -204,16 +223,16 @@ Once all frames (`0` to `total_frames - 1`) are in `final_v1/`:
 - **Direct Python:**
 
   ```
-  python encode_film.py films/human-computers
+  python encode_film.py films/human-computers [--nvenc] [--crf 17] [--cq 18]
   ```
 
-- **Direct Encoder with NVENC (GPU H.264):**
+- **Direct Encoder with NVENC (GPU H.264 with automatic CPU fallback):**
 
   ```
   python tools/render/encode.py films/knocker-upper/final_v1 1129 films/knocker-upper/audio/mix.wav films/knocker-upper/caps films/knocker-upper/Before-Alarm-Clocks-Knocker-Upper_1080p.mp4 --nvenc
   ```
 
-The encoder upscales frames to `1080x1920` (Lanczos) at `30 fps`, overlays captions from `caps/list.txt`, muxes `audio/mix.wav` (padded/trimmed to `total_frames / 30` seconds), and outputs H.264 (`libx264` CRF 17 or `h264_nvenc` CQ 18) + AAC `256k` audio.
+The encoder upscales frames to `1080x1920` (Lanczos) at `30 fps`, overlays captions from `caps/list.txt` (or encodes cleanly without overlay if captions are absent), muxes `audio/mix.wav` (padded/trimmed to `total_frames / 30` seconds, with silent audio fallback if missing), displays live encoding progress (FPS, speed, percentage), and outputs H.264 (`libx264` CRF 17 or `h264_nvenc` CQ 18) + AAC `256k` audio. If NVENC fails (e.g. driver version mismatch), it automatically falls back to `libx264` CPU encoding so encoding never fails.
 
 ---
 
