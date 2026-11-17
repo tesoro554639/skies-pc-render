@@ -448,6 +448,7 @@ class RenderController:
                 ["taskkill", "/F", "/T", "/PID", str(p.pid)],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
         else:
             p.terminate()
@@ -455,7 +456,7 @@ class RenderController:
     def _run_cmd(self, cmd: list[str]) -> int:
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
-        flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+        flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW) if os.name == "nt" else 0
         self.proc = subprocess.Popen(
             cmd,
             cwd=str(ROOT),

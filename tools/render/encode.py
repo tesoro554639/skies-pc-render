@@ -16,5 +16,8 @@ cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", os.path.join(fr,
        "-map", "[v]", "-map", "[a]", "-frames:v", str(total), *vcodec, "-pix_fmt", "yuv420p",
        "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", out]
 subprocess.run(cmd, check=True)
-p = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=nb_frames", "-of", "csv=p=0", out], capture_output=True, text=True).stdout.split()
-print("ENCODED", out, p)
+try:
+    p = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=nb_frames", "-of", "csv=p=0", out], capture_output=True, text=True).stdout.split()
+    print("ENCODED", out, p)
+except Exception:
+    print("ENCODED", out)

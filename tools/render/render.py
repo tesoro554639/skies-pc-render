@@ -14,13 +14,14 @@ todo = [f for f in fr if not os.path.exists(os.path.join(a.out, 'f_%05d.png' % f
 print('frames', len(fr), 'to render', len(todo), flush=True)
 if not todo: print('RENDER DONE', flush=True); sys.exit(0)
 n = max(1, min(a.procs, len(todo))); parts = [todo[i::n] for i in range(n)]   # interleaved: every browser covers the whole film
+flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
 procs = []; node_procs = []; work = []
 for j, part in enumerate(parts):
     d = os.path.join(a.out, '_w%d' % j); shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
     port = 8840 + j
-    procs.append(subprocess.Popen([sys.executable, os.path.join(H, 'srv.py'), a.web, d, str(port)], stdout=open(d + '.srv.log', 'w'), stderr=subprocess.STDOUT))
-    time.sleep(0.4)
-    np = subprocess.Popen(['node', os.path.join(H, 'run.js'), str(port), ','.join(map(str, part)), d, str(a.w), str(a.ms), str(a.sm)], stdout=open(d + '.log', 'w'), stderr=subprocess.STDOUT, cwd=H)
+    procs.append(subprocess.Popen([sys.executable, os.path.join(H, 'srv.py'), a.web, d, str(port)], stdout=open(d + '.srv.log', 'w'), stderr=subprocess.STDOUT, creationflags=flags))
+    time.sleep(0.8)
+    np = subprocess.Popen(['node', os.path.join(H, 'run.js'), str(port), ','.join(map(str, part)), d, str(a.w), str(a.ms), str(a.sm)], stdout=open(d + '.log', 'w'), stderr=subprocess.STDOUT, cwd=H, creationflags=flags)
     procs.append(np); node_procs.append(np)
     work.append(d)
 t0 = time.time(); last = -1
